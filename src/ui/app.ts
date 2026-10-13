@@ -70,6 +70,16 @@ interface Tally {
 
 const NO_TALLY: Tally = { games: 0, wins: 0, losses: 0, draws: 0, outs: 0 };
 
+/** The first of the browser's preferred languages that the game speaks; English failing both. */
+function browserLang(): Lang {
+  const wanted = navigator.languages?.length ? navigator.languages : [navigator.language];
+  for (const tag of wanted) {
+    const code = tag.toLowerCase().split('-')[0];
+    if (code === 'ru' || code === 'en') return code;
+  }
+  return 'en';
+}
+
 const DEFAULTS: Settings = {
   opponents: ['boris'],
   ratings: {},
@@ -88,7 +98,7 @@ const DEFAULTS: Settings = {
   trumpCount: false,
   showPlayable: false,
   showTrumps: false,
-  lang: navigator.language.toLowerCase().startsWith('ru') ? 'ru' : 'en',
+  lang: browserLang(),
 };
 
 function load<T>(key: string, fallback: T, store: () => Storage = () => localStorage): T {
@@ -959,6 +969,8 @@ export function startApp(): void {
 
   function renderBar(): void {
     document.documentElement.lang = settings.lang;
+    document.title = t.title;
+    $('brand').textContent = t.title;
     $('meta').innerHTML =
       `<span>${settings.transfer ? t.transfer : t.simple}</span>` +
       `<span class="trump-chip ${isRed(game.trump) ? 'red' : 'black'}">${t.trump} ${suitSvg(game.trump)}</span>`;
