@@ -1,19 +1,23 @@
 # Дурак
 
 A trainer for the card game Durak: you against one to three computer players, in the browser.
+Play it at https://synarteum.com/durak/.
+
+![The table in a four-player game: three opponents with portraits, two cards to beat, the discard pile, and the playable cards of the hand picked out](docs/screenshot.jpg)
 
 - Подкидной and переводной, 36 cards, 2 to 4 players.
 - Nine named opponents in two styles of portrait, realistic and caricature, each with a skill
   rating from one to five stars. Pick one to three of them by face or by strength.
 - Optional portraits that react to the game, remarks in each character's own voice, and
   reading the remarks aloud.
-- A hint button that shows what the strong player would do in your seat (can be switched off).
+- A hint button that shows what the strong player would do in your seat (optional).
 - A Resign button on your turn; it asks once more before giving the game up.
 - Who leads and who defends is written above each opponent's cards, and an arrow on the table
   (optional) runs from the one to the other.
 - A beaten bout stays on the table until you clear it, so you can commit the cards to memory
-  (or is cleared automatically, as an option). Clicking the discard pile lists what is in it.
-- English and Russian.
+  (or is cleared automatically, as an option). As a memory aid the discard pile can be laid
+  out face up, sorted, for reading.
+- Russian, English and French.
 
 ## Running it
 
