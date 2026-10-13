@@ -208,21 +208,33 @@ a.ghost {
   transform: rotateY(0);
 }
 
+/* Which side of a card shows is switched outright, at the middle of the turn, by hiding the
+   other side. It is not left to the browser to hide whichever side faces away: with the
+   blended pictures on the court cards, some browsers get that wrong and show a face-down
+   card's face. Neither side is marked as hidden from behind, so that a browser which
+   flattens the turn still draws the side that is meant to show. */
 .card-face,
 .card-back {
   position: absolute;
   inset: 0;
   border-radius: calc(var(--cw) * 0.075);
-  backface-visibility: hidden;
+  transition: visibility 0s linear 0.11s;
   box-shadow:
     0 1px 1px rgba(0, 0, 0, 0.35),
     0 calc(var(--cw) * 0.05) calc(var(--cw) * 0.12) rgba(0, 0, 0, 0.3);
 }
 
 .card-face {
+  visibility: hidden;
   background: linear-gradient(160deg, #fbf6ea 0%, var(--ivory) 55%, var(--ivory-shade) 100%);
   color: var(--ink);
   font-family: var(--display);
+}
+.card.up .card-face {
+  visibility: visible;
+}
+.card.up .card-back {
+  visibility: hidden;
 }
 .card.red .card-face {
   color: var(--cinnabar);
@@ -327,18 +339,9 @@ a.ghost {
   mix-blend-mode: multiply;
   display: none;
   pointer-events: none;
-  /* While a card lies face down its picture is hidden outright, and it changes at the middle
-     of the turn. Leaving it to the face's hidden back side is not enough: because of the
-     blend mode, Firefox draws the picture straight through the back of the card. */
-  visibility: hidden;
-  backface-visibility: hidden;
-  transition: visibility 0s linear 0.11s;
 }
 .card.pictured .art {
   display: block;
-}
-.card.up .art {
-  visibility: visible;
 }
 .card.pictured .idx,
 .card.pictured .centre,
@@ -1183,7 +1186,8 @@ dialog .buttons [data-act='reset'] {
   .card-inner {
     transition-duration: 0.01s;
   }
-  .art {
+  .card-face,
+  .card-back {
     transition-delay: 0s;
   }
   .card.hinted .card-face,
