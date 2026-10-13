@@ -461,9 +461,12 @@ a.ghost {
 .pile-label:empty {
   display: none;
 }
-button.pile-label:hover {
+button.pile-label:enabled:hover {
   background: var(--brass);
   color: var(--walnut);
+}
+button.pile-label:disabled {
+  cursor: default;
 }
 
 /* -------------------------------------------------------------------- seats */
@@ -1060,6 +1063,11 @@ dialog h2 {
   width: 16px;
   height: 16px;
   accent-color: var(--brass);
+}
+/* The star on the options that are aids, and on the note that explains it. */
+.aid {
+  font-weight: 400;
+  color: var(--brass-bright);
 }
 .fine {
   margin: 4px 0 0;

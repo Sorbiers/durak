@@ -1,4 +1,4 @@
-import { Card, rankOf, suitOf } from '../engine/cards';
+import { Card, RANKS, SUITS, rankOf, suitOf } from '../engine/cards';
 import { GameState } from '../engine/game';
 
 export interface Place {
@@ -24,7 +24,7 @@ export interface Geometry {
   aims: { x: number; y: number }[]; // where the table meets each seat: ends of the attack arrow
   centre: { x: number; y: number }; // middle of the table
   deck: { x: number; y: number };
-  discard: { x: number; y: number };
+  discard: { x: number; y: number }; // where the discard's label goes: centred on x, at y
   actionY: number;
 }
 
@@ -32,7 +32,7 @@ export interface LayoutOptions {
   human: number;
   selected: Card[];
   revealAll: boolean; // game over: turn every hand face up
-  showKnown: boolean; // memory aid: show opponents' cards that were once face up
+  showKnown: boolean; // memory aid: show the cards that were once face up, in hands and in the discard
   avatars: 'off' | 'normal' | 'large'; // room for a portrait beside each opponent's cards
 }
 
@@ -100,28 +100,60 @@ export function computeLayout(
     }
   });
 
-  // Discard heap on the right.
-  const discard = { x: W - 16 - cw * 0.8, y: tableY };
-  s.discard.forEach((c, i) => {
-    places.set(c, {
-      x: discard.x + jitter(c, 1) * cw * 0.2,
-      y: discard.y + jitter(c, 2) * cw * 0.2,
-      rot: jitter(c, 3) * 70,
-      scale: 0.92,
-      z: 1 + i,
-      up: false,
-      where: 'discard',
-      seat: -1,
+  // The discard, on the right. Normally a heap, face down. As a memory aid it is laid out to
+  // be read: a column for each suit, low to high, each card showing its rank above the next.
+  // The cards are small for that, so the columns need room: on a screen where they would be
+  // too small to read, the open discard stays a heap and is read through its label instead.
+  const roomH = tableBottom - tableTop;
+  const STRIP = 0.2; // how much of a card shows above the one lying on it, of its height
+  const columns = SUITS; // one column per suit
+  const mostInColumn = RANKS;
+  const tall = 1 + (mostInColumn - 1) * STRIP; // height of a full column, in cards
+  const small = Math.min(0.58, (roomH * 0.96) / (ch * tall), (W * 0.27) / (cw * columns + 18));
+  const laidOut = opt.showKnown && small * cw >= 36;
+  const gap = 6;
+  const pileW = laidOut ? columns * cw * small + (columns - 1) * gap : cw * 1.5;
+  const pileLeft = laidOut ? W - 12 - pileW : W - 16 - cw * 0.8 - cw * 0.7;
+  const pileTop = laidOut ? tableY - (ch * small * tall) / 2 : tableY - ch / 2;
+  const heap = { x: W - 16 - cw * 0.8, y: tableY };
+  const discard = { x: laidOut ? pileLeft + pileW / 2 : heap.x, y: pileTop - 30 };
+  if (laidOut) {
+    for (let suit = 0; suit < columns; suit++) {
+      const column = s.discard.filter((c) => suitOf(c) === suit).sort((a, b) => a - b);
+      column.forEach((c, i) => {
+        places.set(c, {
+          x: pileLeft + suit * (cw * small + gap) + (cw * small) / 2,
+          y: pileTop + (ch * small) / 2 + i * ch * small * STRIP,
+          rot: 0,
+          scale: small,
+          z: 1 + i,
+          up: true,
+          where: 'discard',
+          seat: -1,
+        });
+      });
+    }
+  } else {
+    s.discard.forEach((c, i) => {
+      places.set(c, {
+        x: heap.x + jitter(c, 1) * cw * 0.2,
+        y: heap.y + jitter(c, 2) * cw * 0.2,
+        rot: jitter(c, 3) * 70,
+        scale: 0.92,
+        z: 1 + i,
+        up: opt.showKnown,
+        where: 'discard',
+        seat: -1,
+      });
     });
-  });
+  }
 
   // The bout in the middle: each attack card with its answer overlapping it.
   const m = s.attacks.length;
   if (m > 0) {
     const left = deck.x + cw * 1.22 + 14;
-    const right = discard.x - cw * 0.7 - 10;
+    const right = pileLeft - 10;
     // Shrink the bout just enough for all its rows to fit between the hands.
-    const roomH = tableBottom - tableTop;
     let scale = 1;
     let perRow = m;
     let rows = 1;

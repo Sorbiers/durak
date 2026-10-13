@@ -918,8 +918,10 @@ export function startApp(): void {
     const discardLabel = $('discard-label');
     discardLabel.textContent = `${t.discarded} · ${game.discard.length}`;
     discardLabel.hidden = game.discard.length === 0;
+    // Looking through the discard is part of the memory aid; without it the pile stays shut.
+    $<HTMLButtonElement>('discard-label').disabled = !settings.showKnown;
     discardLabel.style.left = `${geo.discard.x}px`;
-    discardLabel.style.top = `${geo.discard.y - geo.ch / 2 - 30}px`;
+    discardLabel.style.top = `${geo.discard.y}px`;
   }
 
   function renderActions(legal: number[], over: boolean): void {
@@ -1015,8 +1017,10 @@ export function startApp(): void {
             `<label><input type="radio" name="${name}" value="${value}"${value === current ? ' checked' : ''}><span>${label}</span></label>`,
         )
         .join('')}</div>`;
-    const check = (name: string, label: string, on: boolean): string =>
-      `<label class="check"><input type="checkbox" name="${name}"${on ? ' checked' : ''}><span>${label}</span></label>`;
+    // An aid is starred: the note under the list says whom the starred options are for.
+    const check = (name: string, label: string, on: boolean, aid = false): string =>
+      `<label class="check"><input type="checkbox" name="${name}"${on ? ' checked' : ''}>` +
+      `<span>${label}${aid ? ' <b class="aid">*</b>' : ''}</span></label>`;
 
     // Opponents are picked from the roster, by face or by the stars that show their strength.
     // The order of picking is the order of seating, clockwise from the player's left.
@@ -1063,13 +1067,14 @@ export function startApp(): void {
       check('phrases', t.setPhrases, settings.phrases) +
       check('speech', t.setSpeech, settings.speech) +
       check('firstBoutFive', t.setFive, settings.firstBoutFive) +
-      check('showKnown', t.setKnown, settings.showKnown) +
+      check('showKnown', t.setKnown, settings.showKnown, true) +
       check('autoDiscard', t.setAutoDiscard, settings.autoDiscard) +
-      check('hints', t.setHints, settings.hints) +
-      check('showPlayable', t.setPlayable, settings.showPlayable) +
-      check('showTrumps', t.setTrumps, settings.showTrumps) +
+      check('hints', t.setHints, settings.hints, true) +
+      check('showPlayable', t.setPlayable, settings.showPlayable, true) +
+      check('showTrumps', t.setTrumps, settings.showTrumps, true) +
       check('showArrow', t.setArrow, settings.showArrow) +
       check('trumpCount', t.setTrumpCount, settings.trumpCount) +
+      `<p class="fine"><b class="aid">*</b> ${t.aidNote}</p>` +
       `</div></div>` +
       `<p class="fine">${t.fairness}</p>` +
       `<div class="buttons"><button type="button" class="plain" data-act="reset">${t.resetTally}</button>` +
@@ -1206,7 +1211,7 @@ export function startApp(): void {
   });
   $('discard-label').addEventListener('click', (e) => {
     e.stopPropagation();
-    openDiscard();
+    if (settings.showKnown) openDiscard();
   });
   stage.addEventListener('click', cancelSelection);
   document.addEventListener('keydown', (e) => {

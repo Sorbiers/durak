@@ -135,7 +135,9 @@ All in Settings. The display options take effect at once.
 
 The rest are off unless noted:
 
-- Show opponents' cards you have already seen (a memory aid).
+- Show cards you have already seen (a memory aid): the ones picked up into opponents' hands, and
+  the discard pile, which then lies face up and can be looked through by clicking its label.
+  Without it the discard pile stays shut.
 - Clear beaten cards automatically (on). Without it a beaten bout waits for the Clear button.
 - Offer hints.
 - Highlight the cards you can play (on). Without it the hand looks plain and an illegal card
