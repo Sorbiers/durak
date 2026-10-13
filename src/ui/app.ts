@@ -819,7 +819,7 @@ export function startApp(): void {
       const where = geo.roles[p];
       if (chip && where) {
         chip.textContent = word;
-        chip.className = `role-chip${part ? ` ${part}` : ''}`;
+        chip.className = `role-chip${part ? ` ${part}` : ''}${where.beside ? ' beside' : ''}`;
         chip.style.left = `${where.x}px`;
         chip.style.top = `${where.y}px`;
       }
@@ -920,7 +920,7 @@ export function startApp(): void {
       }
       if (settings.hints) button(t.hint, 'plain', () => void askHint());
     }
-    // Resigning is kept well away from the buttons used on every move.
+    // Resigning is kept in the corner, well away from the buttons used on every move.
     const resignButton = $('resign');
     resignButton.hidden = !awaitingHuman || over;
     resignButton.textContent = resignArmed ? t.resignSure : t.resign;

@@ -513,6 +513,9 @@ button.pile-label:hover {
   position: absolute;
   transform: translate(-50%, -50%);
 }
+.role-chip.beside {
+  transform: translate(0, -50%);
+}
 .role-chip:empty {
   display: none;
 }
@@ -728,10 +731,10 @@ button.pile-label:hover {
 .plain:active {
   transform: translateY(1px);
 }
-/* Resigning sits at the far right, away from the buttons used on every move. */
+/* Resigning sits in the bottom right corner, away from the buttons used on every move. */
 #resign {
   position: absolute;
-  transform: translate(-100%, -50%);
+  transform: translate(-100%, -100%);
   z-index: 450;
   padding: 6px 14px;
   font-size: 13px;

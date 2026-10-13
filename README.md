@@ -162,6 +162,11 @@ plain drawn face.
 - Portraits: generated images of people who do not exist.
 - Fonts: Oranienbaum and Golos Text, under the SIL Open Font License.
 
+## Licence
+
+The code is under the MIT licence; see `LICENSE`. The card pictures and voice clips keep the
+terms noted under Credits.
+
 ## Tests
 
 ```

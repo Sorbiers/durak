@@ -17,8 +17,10 @@ export interface Geometry {
   ch: number;
   seats: { x: number; y: number }[]; // where each seat's name plate goes
   avatars: ({ x: number; y: number; size: number } | null)[]; // portrait centre, per seat
-  roles: ({ x: number; y: number } | null)[]; // where "leads" / "defends" goes, above the cards
-  resign: { x: number; y: number }; // right-hand end of the Resign button
+  // Where "leads" / "defends" goes. Beside a portrait it starts at x; without one it is
+  // centred on x, above the cards.
+  roles: ({ x: number; y: number; beside: boolean } | null)[];
+  resign: { x: number; y: number }; // bottom right corner of the Resign button
   aims: { x: number; y: number }[]; // where the table meets each seat: ends of the attack arrow
   centre: { x: number; y: number }; // middle of the table
   deck: { x: number; y: number };
@@ -208,12 +210,13 @@ export function computeLayout(
       step = k > 1 ? Math.min(easyStep, (fanRoom - cardW) / (k - 1)) : 0;
       first = fanLeft + cardW / 2;
       avatars.push({ x: left + portrait / 2, y: top + topH / 2, size: portrait });
-      roles.push({ x: fanLeft + (5 * easyStep + cardW) / 2, y: top + (topH - cardW * 1.5) / 2 - 14 });
+      // Next to the picture, a little below its top edge, and never down on the cards.
+      roles.push({ x: fanLeft, y: Math.min(top + 20, top + (topH - cardW * 1.5) / 2 - 13), beside: true });
     } else {
       step = k > 1 ? Math.min(easyStep, (slotW * 0.55) / (k - 1)) : 0;
       first = x - ((k - 1) / 2) * step;
       avatars.push(null);
-      roles.push({ x, y: top + (topH - cardW * 1.5) / 2 - 14 });
+      roles.push({ x, y: top + (topH - cardW * 1.5) / 2 - 14, beside: false });
     }
     hand.forEach((c, i) => {
       const off = i - (k - 1) / 2;
@@ -233,7 +236,7 @@ export function computeLayout(
     aims.push({ x, y: tableTop - 4 });
   }
 
-  const resign = { x: W - 16, y: narrow ? actionY - 66 : actionY };
+  const resign = { x: W - 12, y: H - 12 }; // the bottom right corner
   return {
     places,
     geo: { cw, ch, seats, avatars, roles, resign, aims, centre: { x: W / 2, y: tableY }, deck, discard, actionY },
