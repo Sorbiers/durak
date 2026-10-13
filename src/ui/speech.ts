@@ -7,12 +7,20 @@ import { ROOT } from './root';
 // played only if it has already arrived. And voices never overlap or queue: while one remark
 // is being spoken, any other goes unspoken instead of being played late.
 
-// Voices are matched to a character by the names operating systems give them.
-const FEMALE = /irina|svetlana|dari|milena|katya|al[yo]ona|alena|zira|hazel|susan|samantha|victoria|karen|moira|tessa|aria|jenny|michelle|female|женск/i;
-const MALE = /pavel|dmitr|maxim|yuri|david|mark|george|guy|daniel|fred|james|ryan|\bmale|мужск/i;
+// Voices are matched to a character by the names operating systems give them: Russian,
+// English and French ones. Google's voices carry no name; all but its one "Male" are women.
+const FEMALE =
+  /irina|svetlana|dari|milena|katya|al[yo]ona|alena|zira|hazel|susan|samantha|victoria|karen|moira|tessa|aria|jenny|michelle|hortense|julie|caroline|denise|[ée]lo[iï]se|vivienne|sylvie|charline|ariane|am[ée]lie|audrey|aur[ée]lie|\bmarie\b|chantal|female|женск/i;
+const MALE =
+  /pavel|dmitr|maxim|yuri|david|mark|george|guy|daniel|fred|james|ryan|\bpaul\b|claude|guillaume|henri|r[ée]my|antoine|\bjean\b|thierry|g[ée]rard|fabrice|thomas|jacques|nicolas|\bmale|мужск/i;
+const isFemale = (v: SpeechSynthesisVoice): boolean =>
+  FEMALE.test(v.name) || (/google/i.test(v.name) && !/\bmale/i.test(v.name));
+const isMale = (v: SpeechSynthesisVoice): boolean => MALE.test(v.name) && !isFemale(v);
 
 // Neural voices (Edge calls them "Natural" or "Online") pronounce far better than the older
-// built-in ones, and Google's sit in between, so a better voice wins over a matching gender.
+// built-in ones, and Google's sit in between. A voice of the right sex comes first all the
+// same, a man speaking in a woman's voice being worse than a plainer voice; among those that
+// fit, the better one is used.
 const quality = (v: SpeechSynthesisVoice): number =>
   /natural|neural|online/i.test(v.name) ? 3 : /google/i.test(v.name) ? 2 : v.localService ? 0 : 1;
 
@@ -166,9 +174,8 @@ function synthesize(text: string, who: Character, lang: Lang): void {
   const synth = window.speechSynthesis;
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = { ru: 'ru-RU', en: 'en-US', fr: 'fr-FR' }[lang];
-  const fits = (v: SpeechSynthesisVoice): boolean =>
-    who.female ? FEMALE.test(v.name) : MALE.test(v.name) && !FEMALE.test(v.name);
-  const score = (v: SpeechSynthesisVoice): number => quality(v) * 2 + (fits(v) ? 1 : 0);
+  const fits = (v: SpeechSynthesisVoice): boolean => (who.female ? isFemale(v) : isMale(v));
+  const score = (v: SpeechSynthesisVoice): number => (fits(v) ? 10 : 0) + quality(v);
   const voice = synth
     .getVoices()
     .filter((v) => v.lang.toLowerCase().startsWith(lang))
