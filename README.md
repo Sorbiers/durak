@@ -83,7 +83,7 @@ are games, the rating under test, players, transfer (0 or 1) and the opponents' 
 | 2 | rules of thumb, a random move about one time in seven | 60% |
 | 3 | rules of thumb, no slips | 50% by definition |
 | 4 | looks ahead, but plays by rule of thumb one time in three | 37% |
-| 5 | looks ahead on every move and solves two-player endgames exactly | 18% |
+| 5 | looks ahead on every move, solves two-player endgames exactly, and leads one card at a time | 18% |
 
 The rates are from two-player games of podkidnoy (2000 games for one and two stars, 240 for
 four and five). Each character has a usual rating, and Boris is the only one who is usually

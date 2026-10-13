@@ -846,8 +846,11 @@ export function startApp(): void {
       // it is written above their cards, where it is easier to see.
       const part = out || over ? '' : p === game.defender ? 'defend' : p === game.attacker ? 'attack' : '';
       const mine = p === HUMAN;
-      const word =
-        part === 'defend' ? (mine ? t.youDefend : t.defends) : part === 'attack' ? (mine ? t.youAttack : t.attacks) : '';
+      // A defender who has given up is no longer defending: the label says they are picking up.
+      const taking = part === 'defend' && game.phase === PILE_ON;
+      const word = taking
+        ? mine ? t.youTake : t.takes
+        : part === 'defend' ? (mine ? t.youDefend : t.defends) : part === 'attack' ? (mine ? t.youAttack : t.attacks) : '';
       const plateRole = el.querySelector<HTMLElement>('.role')!;
       plateRole.textContent = out && !over ? (!mine && who(p).female ? t.outShe : t.out) : mine ? word : '';
       plateRole.className = `role${mine && part ? ` ${part}` : ''}`;
