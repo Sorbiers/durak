@@ -545,6 +545,14 @@ export function startApp(): void {
     }
   }
 
+  /** Puts the lifted cards back: by the Cancel button, the Esc key or a click on the cloth. */
+  function cancelSelection(): void {
+    if (selected.length === 0) return;
+    selected = [];
+    notice = '';
+    render();
+  }
+
   function selectionAction(): number {
     let mask = 0;
     for (const c of selected) mask |= 1 << suitOf(c);
@@ -955,6 +963,8 @@ export function startApp(): void {
         status = legal.length === 1 ? t.nothingToAdd : piling ? t.pileOn : t.throwIn;
         button(piling ? t.enough : t.done, 'primary', () => humanPlay(PASS), hinting === 'pass');
       }
+      // Cards that have been lifted can always be put back.
+      if (selected.length) button(t.cancel, 'plain', cancelSelection);
       if (settings.hints) button(t.hint, 'plain', () => void askHint());
     }
     // Resigning is kept in the corner, well away from the buttons used on every move.
@@ -1198,16 +1208,14 @@ export function startApp(): void {
     e.stopPropagation();
     openDiscard();
   });
-  stage.addEventListener('click', () => {
-    if (selected.length > 0) {
-      selected = [];
-      notice = '';
-      render();
-    }
-  });
+  stage.addEventListener('click', cancelSelection);
   document.addEventListener('keydown', (e) => {
+    if (document.querySelector('dialog[open]')) return; // a dialog handles its own keys
+    if (e.key === 'Escape') {
+      cancelSelection();
+      return;
+    }
     if (e.key !== ' ' && e.key !== 'Enter') return;
-    if (document.querySelector('dialog[open]')) return;
     const primary = (resultEl.hidden ? buttonsEl : resultEl).querySelector<HTMLButtonElement>('.primary');
     if (primary) {
       e.preventDefault();
