@@ -32,7 +32,7 @@ export const CHARACTERS: Character[] = [
     rating: 5,
     female: false,
     pitch: 0.7,
-    moods: { neutral: 0, thinking: 3, pleased: 4, happy: 5, surprised: 1, sad: 6, angry: 0, worried: 7 },
+    moods: { neutral: 8, thinking: 4, pleased: 7, happy: 3, surprised: 2, sad: 5, angry: 6, worried: 6 },
   },
   {
     id: 'vera',
@@ -59,7 +59,7 @@ export const CHARACTERS: Character[] = [
     rating: 3,
     female: false,
     pitch: 0.95,
-    moods: { neutral: 8, thinking: 4, pleased: 7, happy: 3, surprised: 2, sad: 5, angry: 6, worried: 6 },
+    moods: { neutral: 0, thinking: 3, pleased: 4, happy: 5, surprised: 1, sad: 6, angry: 0, worried: 7 },
   },
   {
     id: 'tamara',

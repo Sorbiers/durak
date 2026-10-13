@@ -120,17 +120,20 @@ voices never overlap or queue: while one remark is being spoken, another goes un
 
 All in Settings. The display options take effect at once.
 
-- Portraits: off, still, or reacting to the game (on by default); optionally large.
+- Opponent on a first visit: Lev, at his usual four stars.
+- Portraits: off, still, or reacting to the game (the default), and large (on by default).
 - Opponents make remarks (on by default); speak the remarks aloud (off by default).
-- Arrow from whoever leads to whoever defends (on by default).
+- The next game is led by the winner, or at the fool (the default).
+- Thinking time: quick, normal or deep (the default).
 
 The rest are off unless noted:
 
 - Show opponents' cards you have already seen (a memory aid).
-- Clear beaten cards automatically. Otherwise a beaten bout waits for the Clear button.
-- Offer hints (on).
-- Highlight the cards you can play. Without it the hand looks plain and an illegal card is
-  refused with a small shake.
+- Clear beaten cards automatically (on). Without it a beaten bout waits for the Clear button.
+- Offer hints.
+- Highlight the cards you can play (on). Without it the hand looks plain and an illegal card
+  is refused with a small shake.
+- Arrow from whoever leads to whoever defends.
 - Mark trump cards with a brass band.
 
 ## Deploying

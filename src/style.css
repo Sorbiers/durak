@@ -327,9 +327,18 @@ a.ghost {
   mix-blend-mode: multiply;
   display: none;
   pointer-events: none;
+  /* While a card lies face down its picture is hidden outright, and it changes at the middle
+     of the turn. Leaving it to the face's hidden back side is not enough: because of the
+     blend mode, Firefox draws the picture straight through the back of the card. */
+  visibility: hidden;
+  backface-visibility: hidden;
+  transition: visibility 0s linear 0.11s;
 }
 .card.pictured .art {
   display: block;
+}
+.card.up .art {
+  visibility: visible;
 }
 .card.pictured .idx,
 .card.pictured .centre,
@@ -1173,6 +1182,9 @@ dialog .buttons [data-act='reset'] {
   .card,
   .card-inner {
     transition-duration: 0.01s;
+  }
+  .art {
+    transition-delay: 0s;
   }
   .card.hinted .card-face,
   .dots i {
