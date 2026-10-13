@@ -20,7 +20,7 @@ import {
 } from '../engine/game';
 import { observe } from '../engine/observe';
 import { cryptoRng } from '../engine/rng';
-import { PAGES } from '../seo';
+import { PAGES, otherLangs } from '../seo';
 import { AiClient } from './aiClient';
 import { CHARACTERS, Character, Mood, avatarUrl, characterById, preloadAvatars } from './characters';
 import { Lang, STRINGS, Strings, fill } from './i18n';
@@ -981,17 +981,15 @@ export function startApp(): void {
     $('score').textContent = tally.games > 0 ? fill(line, { ...tally }) : '';
     $('btn-new').textContent = t.newGame;
     $('btn-settings').textContent = t.settings;
-    // The switch is a real link to the page in the other language, for search engines and
-    // for opening in a new tab; an ordinary click switches in place (see below).
-    const other: Lang = settings.lang === 'ru' ? 'en' : 'ru';
-    const langLink = $<HTMLAnchorElement>('btn-lang');
-    langLink.textContent = other.toUpperCase();
-    langLink.href = `${ROOT}${other}/`;
-    langLink.hreflang = other;
     $('btn-about').firstElementChild!.textContent = t.about;
     $('btn-about').setAttribute('aria-label', t.about);
     if (aboutLang !== settings.lang) {
       aboutLang = settings.lang;
+      // The switch is made of real links to the pages in the other languages, for search
+      // engines and for opening in a new tab; an ordinary click switches in place (see below).
+      $('langs').innerHTML = otherLangs(settings.lang)
+        .map((l) => `<a class="ghost" href="${ROOT}${l}/" hreflang="${l}" data-lang="${l}">${l.toUpperCase()}</a>`)
+        .join('');
       $('about-body').innerHTML = PAGES[settings.lang].about;
       $('about-close').textContent = t.close;
     }
@@ -1179,10 +1177,12 @@ export function startApp(): void {
     resign();
   });
   $('btn-about').addEventListener('click', () => aboutDialog.showModal());
-  $('btn-lang').addEventListener('click', (e) => {
+  $('langs').addEventListener('click', (e) => {
+    const link = (e.target as Element).closest<HTMLElement>('a[data-lang]');
+    if (!link) return;
     if (e.ctrlKey || e.metaKey || e.shiftKey) return; // a new tab or window: follow the link
     e.preventDefault();
-    settings = { ...settings, lang: settings.lang === 'ru' ? 'en' : 'ru' };
+    settings = { ...settings, lang: link.dataset.lang as Lang };
     t = STRINGS[settings.lang];
     save('durak.settings', settings);
     // Keep the address in step with the language without reloading and losing the game.

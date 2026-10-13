@@ -131,6 +131,10 @@ a.ghost {
   text-decoration: none;
   cursor: pointer;
 }
+/* The language links sit in the bar like its buttons. */
+#langs {
+  display: contents;
+}
 
 /* -------------------------------------------------------------------- table */
 
@@ -1164,6 +1168,10 @@ dialog .buttons [data-act='reset'] {
   }
   #btn-about::after {
     content: '?';
+  }
+  /* ...and for one language link: the next one round, which in time reaches them all. */
+  #langs a:not(:first-child) {
+    display: none;
   }
   #actions {
     flex-direction: column;

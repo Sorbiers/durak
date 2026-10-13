@@ -165,7 +165,7 @@ function synthesize(text: string, who: Character, lang: Lang): void {
   if (!canSynthesize()) return;
   const synth = window.speechSynthesis;
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = lang === 'ru' ? 'ru-RU' : 'en-US';
+  utterance.lang = { ru: 'ru-RU', en: 'en-US', fr: 'fr-FR' }[lang];
   const fits = (v: SpeechSynthesisVoice): boolean =>
     who.female ? FEMALE.test(v.name) : MALE.test(v.name) && !FEMALE.test(v.name);
   const score = (v: SpeechSynthesisVoice): number => quality(v) * 2 + (fits(v) ? 1 : 0);

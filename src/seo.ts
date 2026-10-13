@@ -8,7 +8,16 @@ export const SITE = 'https://synarteum.com/';
 export const GAME = `${SITE}durak/`;
 export const REPO = 'https://github.com/Sorbiers/durak';
 
-export type PageLang = 'ru' | 'en';
+export type PageLang = 'ru' | 'en' | 'fr';
+
+/** The site's languages, in the order the language switch goes round them. */
+export const LANGS: PageLang[] = ['ru', 'en', 'fr'];
+
+/** The languages a page in `lang` offers to switch to, the next one round first. */
+export function otherLangs(lang: PageLang): PageLang[] {
+  const at = LANGS.indexOf(lang);
+  return LANGS.map((_, step) => LANGS[(at + step) % LANGS.length]).slice(1);
+}
 
 export interface PageText {
   title: string;
@@ -44,7 +53,7 @@ export const PAGES: Record<PageLang, PageText> = {
 можно задать отдельно.</li>
 <li>Портреты, реплики и озвучка — по желанию.</li>
 <li>Подсказка хода, просмотр «бито», счёт побед и поражений.</li>
-<li>Русский и английский язык.</li>
+<li>Русский, английский и французский язык.</li>
 </ul>
 
 <h3>Правила</h3>
@@ -96,7 +105,7 @@ calculated exactly.</p>
 master; each one's level can be set separately.</li>
 <li>Portraits, table talk and Russian voice lines, all optional.</li>
 <li>A hint for the move, a view of the discard pile, a tally of wins and losses.</li>
-<li>Russian and English.</li>
+<li>Russian, English and French.</li>
 </ul>
 
 <h3>Rules</h3>
@@ -120,6 +129,61 @@ defender's last card, there is no fool: it is a draw.</li>
 
 <p class="fine">The game is one of the halls of <a href="${SITE}en/">SynArteum</a>, a museum of
 synthetic art. The source is open under the MIT licence:
+<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
+  },
+  fr: {
+    title: 'Dourak en ligne — le jeu de cartes russe contre un ordinateur fort',
+    description:
+      'Jouez au dourak, le classique russe, gratuitement dans le navigateur : 2 à 4 joueurs, 36 cartes. ' +
+      'Un ordinateur fort et loyal, qui ne voit ni votre main ni le talon.',
+    about: `
+<h2>Dourak en ligne</h2>
+<p>Le dourak (« le sot ») est le jeu de cartes russe le plus connu. Personne n’y gagne : le
+dernier joueur à qui il reste des cartes a perdu, c’est lui le dourak. Chacun attaque à son tour
+son voisin de gauche ; le défenseur doit battre chaque carte avec une carte plus forte de la même
+couleur ou avec un atout, et s’il ne peut pas ou ne veut pas, il ramasse tout ce qui est sur la
+table.</p>
+<p>Ici, on y joue gratuitement dans le navigateur, sans inscription ni publicité : en tête-à-tête,
+ou à trois ou quatre contre des adversaires artificiels.</p>
+
+<h3>Un adversaire fort et loyal</h3>
+<p>L’ordinateur ne triche pas : il ne connaît jamais l’ordre du talon ni les cartes des autres.
+Les joueurs forts font ce que fait une personne attentive : ils comptent les cartes sorties, se
+souviennent de qui a ramassé quoi et calculent plusieurs coups à l’avance. Quand le talon est
+épuisé dans une partie à deux, la fin est calculée exactement.</p>
+
+<h3>Ce que contient le jeu</h3>
+<ul>
+<li>Dourak podkidnoï (où l’on ajoute des cartes) et perevodnoï (où l’on transfère l’attaque), jeu
+de 36 cartes, de deux à quatre joueurs.</li>
+<li>Neuf adversaires qui ont chacun leur caractère et cinq niveaux de force, du débutant au
+maître ; le niveau de chacun se règle séparément.</li>
+<li>Portraits, remarques à table et voix (en russe) : tout est facultatif.</li>
+<li>Un conseil pour le coup à jouer, la vue de la défausse, le décompte des victoires et des
+défaites.</li>
+<li>En russe, en anglais et en français.</li>
+</ul>
+
+<h3>Règles</h3>
+<ul>
+<li>Six cartes chacun ; la dernière carte du talon indique l’atout.</li>
+<li>À la première partie, celui qui a le plus petit atout attaque et le montre. Ensuite, selon le
+réglage choisi : le gagnant de la partie précédente attaque, ou bien on attaque le dourak.</li>
+<li>On attaque avec une carte, ou avec plusieurs de même valeur. Tous, sauf le défenseur, peuvent
+ajouter des cartes d’une valeur déjà présente sur la table.</li>
+<li>Pas plus de six cartes par attaque (cinq tant que la première attaque n’a pas été battue ;
+c’est réglable), et jamais plus que le défenseur n’a de cartes.</li>
+<li>À un défenseur qui ramasse, on peut encore donner des cartes qui conviennent.</li>
+<li>Dans la variante perevodnoï, avant d’avoir battu quoi que ce soit, le défenseur peut poser une
+carte de même valeur et transférer l’attaque au joueur suivant.</li>
+<li>Après une attaque, chacun complète sa main à six cartes : d’abord les attaquants, en
+commençant par celui qui a ouvert, le défenseur en dernier.</li>
+<li>Le dernier à garder des cartes est le dourak. Si la dernière attaque est battue avec la
+dernière carte du défenseur, il n’y a pas de dourak : partie nulle.</li>
+</ul>
+
+<p class="fine">Le jeu est l’une des salles de <a href="${SITE}fr/">SynArteum</a>, un musée d’art
+synthétique. Le code source est ouvert, sous licence MIT :
 <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
   },
 };
@@ -180,5 +244,29 @@ export const LANDING: Record<PageLang, Record<string, string>> = {
     t3: 'An illustrated cup of coffee with a heartfelt wish, matched to your time of day. On Telegram and in the browser.',
     c3: 'Order a cup',
     foot: 'Made by a human and neural networks',
+  },
+  fr: {
+    title: 'SynArteum — un musée d’art synthétique',
+    description:
+      'SynArteum est un musée d’art synthétique en trois salles : le jeu de cartes Dourak contre un ' +
+      'ordinateur fort et loyal, la galerie de rêves Wish Me A Dream et le café Wish Me Coffee.',
+    museum: 'Musée d’art synthétique',
+    lead: 'Trois salles où des réseaux de neurones jouent aux cartes, rêvent en images et servent le café.',
+    hall: 'Salle',
+    exhibit: 'Pièce',
+    neurons: 'neurones',
+    k1: 'Jeu de cartes synthétique',
+    n1: 'Dourak',
+    t1: 'Le classique russe contre des adversaires qui comptent les cartes mais ne trichent jamais. Cinq niveaux de force, neuf personnages.',
+    c1: 'Prendre place',
+    k2: 'Galerie d’art synthétique',
+    n2: 'Wish Me A Dream',
+    t2: 'Un fil paisible de visions rêvées par un réseau de neurones : un baroque surréaliste, une image à la fois.',
+    c2: 'Entrer dans la galerie',
+    k3: 'Café synthétique',
+    n3: 'Wish Me Coffee',
+    t3: 'Une tasse de café illustrée et un vœu sincère, selon l’heure de votre journée. Sur Telegram et dans le navigateur.',
+    c3: 'Commander une tasse',
+    foot: 'Fait par un humain et des réseaux de neurones',
   },
 };

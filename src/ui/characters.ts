@@ -27,7 +27,7 @@ export interface Character {
 export const CHARACTERS: Character[] = [
   {
     id: 'boris',
-    name: { ru: 'Борис', en: 'Boris' },
+    name: { ru: 'Борис', en: 'Boris', fr: 'Boris' },
     style: 'real',
     rating: 5,
     female: false,
@@ -36,7 +36,7 @@ export const CHARACTERS: Character[] = [
   },
   {
     id: 'vera',
-    name: { ru: 'Вера', en: 'Vera' },
+    name: { ru: 'Вера', en: 'Vera', fr: 'Véra' },
     style: 'real',
     rating: 4,
     female: true,
@@ -45,7 +45,7 @@ export const CHARACTERS: Character[] = [
   },
   {
     id: 'lev',
-    name: { ru: 'Лев', en: 'Lev' },
+    name: { ru: 'Лев', en: 'Lev', fr: 'Lev' },
     style: 'cartoon',
     rating: 4,
     female: false,
@@ -54,7 +54,7 @@ export const CHARACTERS: Character[] = [
   },
   {
     id: 'gleb',
-    name: { ru: 'Глеб', en: 'Gleb' },
+    name: { ru: 'Глеб', en: 'Gleb', fr: 'Gleb' },
     style: 'real',
     rating: 3,
     female: false,
@@ -63,7 +63,7 @@ export const CHARACTERS: Character[] = [
   },
   {
     id: 'tamara',
-    name: { ru: 'Тамара', en: 'Tamara' },
+    name: { ru: 'Тамара', en: 'Tamara', fr: 'Tamara' },
     style: 'cartoon',
     rating: 3,
     female: true,
@@ -72,7 +72,7 @@ export const CHARACTERS: Character[] = [
   },
   {
     id: 'anton',
-    name: { ru: 'Антон', en: 'Anton' },
+    name: { ru: 'Антон', en: 'Anton', fr: 'Anton' },
     style: 'cartoon',
     rating: 3,
     female: false,
@@ -81,7 +81,7 @@ export const CHARACTERS: Character[] = [
   },
   {
     id: 'fyodor',
-    name: { ru: 'Фёдор', en: 'Fyodor' },
+    name: { ru: 'Фёдор', en: 'Fyodor', fr: 'Fiodor' },
     style: 'cartoon',
     rating: 2,
     female: false,
@@ -90,7 +90,7 @@ export const CHARACTERS: Character[] = [
   },
   {
     id: 'lyuba',
-    name: { ru: 'Люба', en: 'Lyuba' },
+    name: { ru: 'Люба', en: 'Lyuba', fr: 'Liouba' },
     style: 'cartoon',
     rating: 2,
     female: true,
@@ -99,7 +99,7 @@ export const CHARACTERS: Character[] = [
   },
   {
     id: 'kostya',
-    name: { ru: 'Костя', en: 'Kostya' },
+    name: { ru: 'Костя', en: 'Kostya', fr: 'Kostia' },
     style: 'cartoon',
     rating: 1,
     female: false,

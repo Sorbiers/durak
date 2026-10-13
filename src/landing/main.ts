@@ -2,7 +2,7 @@ import '@fontsource-variable/unbounded';
 import '@fontsource-variable/jetbrains-mono';
 import '@fontsource-variable/golos-text';
 import './style.css';
-import { LANDING, type PageLang } from '../seo';
+import { LANDING, type PageLang, otherLangs } from '../seo';
 import { PAGE_LANG, browserLang } from '../ui/root';
 import { type Emblem, startEmblem, startField } from './neurons';
 
@@ -42,17 +42,15 @@ function speak(lang: PageLang): void {
   for (const el of document.querySelectorAll<HTMLElement>('[data-t]')) {
     el.textContent = text[el.dataset.t!] ?? el.textContent;
   }
-  const other: PageLang = lang === 'ru' ? 'en' : 'ru';
-  const link = document.querySelector<HTMLAnchorElement>('#lang')!;
-  link.textContent = other.toUpperCase();
-  link.hreflang = other;
-  link.href = `./${other}/`;
+  document.querySelector('#langs')!.innerHTML = otherLangs(lang)
+    .map((l) => `<a class="lang" href="./${l}/" hreflang="${l}">${l.toUpperCase()}</a>`)
+    .join('');
 }
 
 document.documentElement.classList.add('js');
 
 // The root address is built in English and speaks the visitor's language if it can.
-if (!PAGE_LANG && browserLang() === 'ru') speak('ru');
+if (!PAGE_LANG && browserLang() !== 'en') speak(browserLang());
 
 const rgb = (el: Element, name: string): string => getComputedStyle(el).getPropertyValue(name).trim();
 const root = document.documentElement;

@@ -116,6 +116,13 @@ Sound follows three rules. Nothing is fetched unless speech is switched on, and 
 clips of the opponents at the table. A clip is played only if it has already arrived. And
 voices never overlap or queue: while one remark is being spoken, another goes unspoken.
 
+## Languages
+
+Russian, English and French, picked from the browser on a first visit and switched from the
+bar. The interface, the About text and the remarks, shared and each character's own, are in
+all three. The recorded voices are Russian; the other languages fall back to the browser's
+speech.
+
 ## Options
 
 All in Settings. The display options take effect at once.
@@ -153,10 +160,10 @@ The repository builds two pages. `index.html` is the front page of SynArteum (a 
 musEUM): three halls, of which this game is the first; its code is in `src/landing/`.
 `durak/index.html` is the game, and its pictures and sounds are in `public/durak/`.
 
-Each of the two is written out at three addresses: its own folder, which picks the language
-from the browser, and `ru/` and `en/` inside it, one language each. Every address has its own
-title, description and texts in its HTML, names the other two as translations, and is listed
-in `sitemap.xml`, which the build also writes. The texts and the site's address live in
+Each of the two is written out at four addresses: its own folder, which picks the language
+from the browser, and `ru/`, `en/` and `fr/` inside it, one language each. Every address has
+its own title, description and texts in its HTML, names the others as translations, and is
+listed in `sitemap.xml`, which the build also writes. The texts and the site's address live in
 `src/seo.ts`; `vite.config.ts` puts them into the pages. `public/robots.txt` points at the
 sitemap, and the `og-*.jpg` files are the pictures shown when a link is shared.
 

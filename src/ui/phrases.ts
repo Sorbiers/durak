@@ -74,10 +74,30 @@ const COMMON: Record<Lang, Lines> = {
     fool: ['It happens…', 'Not my day.', 'Well, congratulations.'],
     youFool: ['A rematch?', 'Happens to everyone.', 'Another game?', "That's cards for you."],
   },
+  fr: {
+    greet: ['On y va ?', 'Cartes sur table.', 'Voyons qui aura qui.', 'Eh bien, commençons.'],
+    lead: ['Du petit pour commencer.', 'À moi d’attaquer.', 'Voyons ce que vous avez.', 'On ouvre avec ça.', 'Tenez, pour commencer.'],
+    throwIn: ['Et encore une.', 'J’en ajoute une.', 'Celle-ci est pour vous aussi.', 'Un petit supplément.', 'En prime.'],
+    beat: ['Battu.', 'Couvert.', 'J’ai de quoi répondre.', 'Répondu.', 'Sans problème.'],
+    beatTrump: ['Il faut un atout.', 'Dommage de dépenser un atout, mais je bats.', 'Rien d’autre qu’un atout.'],
+    take: ['Je ramasse.', 'Bon, je les prends.', 'Je prends.', 'Il faut bien ramasser.'],
+    done: ['Battu.', 'Battu, on enlève.', 'Voilà, battu.'],
+    pass: ['Je passe.', 'Rien à ajouter.'],
+    transfer: ['Je transfère.', 'Pas pour moi. Je transfère.', 'Transfert.'],
+    gotTransfer: ['Tiens donc…', 'Joli.', 'Merci bien.', 'Eh bien, eh bien.'],
+    theyTake: ['Allez, ramassez.', 'Je vous en prie.', 'Ça vous servira.', 'Continuez la collection.', 'Elles sont à vous.'],
+    lastCard: ['Dernière carte.', 'Plus qu’une.', 'Il m’en reste une.'],
+    deckOut: ['Le talon est épuisé.', 'On ne pioche plus.', 'Place à la fin de partie.'],
+    waiting: ['À vous.', 'Rien ne presse.', 'Prenez votre temps.'],
+    out: ['C’est tout pour moi.', 'Plus de cartes.', 'J’ai fini.'],
+    fool: ['Ça arrive…', 'Pas mon jour.', 'Eh bien, félicitations.'],
+    youFool: ['Une revanche ?', 'Ça arrive à tout le monde.', 'Encore une partie ?', 'Ce sont les cartes.'],
+  },
 };
 
-// What each character says in their own voice, keyed by character id.
-const PERSONAL: Record<string, Record<Lang, Lines>> = {
+// What each character says in their own voice, keyed by character id. Where a character has
+// no lines of their own in a language, the shared ones serve.
+const PERSONAL: Record<string, Partial<Record<Lang, Lines>>> = {
   // Boris: the strongest. Dry and exact, always counting.
   boris: {
     ru: {
@@ -113,6 +133,23 @@ const PERSONAL: Record<string, Record<Lang, Lines>> = {
       out: ['As planned.', 'The game is played.'],
       fool: ['An error in my count. Noted.', 'A rare event. Congratulations.'],
       youFool: ['Count the cards.', 'Go over the game. You will find the mistake.'],
+    },
+    fr: {
+      greet: ['Jouez avec soin.', 'Voyons comment vous comptez les cartes.'],
+      lead: ['Le premier coup est une reconnaissance.'],
+      throwIn: ['On maintient la pression.'],
+      beat: ['Répondu.', 'Prévisible.'],
+      beatTrump: ['Un atout bien employé.'],
+      take: ['Je ramasse. C’est le bon coup.', 'Je ramasse. Disons que c’est un investissement.'],
+      transfer: ['Transféré.', 'Retour à l’expéditeur.'],
+      gotTransfer: ['C’est noté.'],
+      theyTake: ['Comme prévu.', 'Je retiens ce que vous avez ramassé.'],
+      lastCard: ['Une carte. Savez-vous laquelle ?'],
+      deckOut: ['Le talon est vide. Maintenant, tout se compte.'],
+      waiting: ['Réfléchissez. Cela vous fait du bien.'],
+      out: ['Comme prévu.', 'La partie est jouée.'],
+      fool: ['Une erreur dans mon compte. C’est noté.', 'Un événement rare. Félicitations.'],
+      youFool: ['Comptez les cartes.', 'Revoyez la partie. Vous trouverez l’erreur.'],
     },
   },
   // Vera: warm, sharp, a little ironic.
@@ -151,6 +188,23 @@ const PERSONAL: Record<string, Record<Lang, Lines>> = {
       fool: ['There, I talked too much.', 'My own fault.'],
       youFool: ["Don't be upset, it happens.", 'You played better than it looks.'],
     },
+    fr: {
+      greet: ['Ravie de jouer. Ne me ménagez pas.', 'Allez, étonnez-moi.'],
+      lead: ['Je commence en douceur.'],
+      throwIn: ['Et encore une, pour lui tenir compagnie.'],
+      beat: ['Et voilà comment on fait.', 'Ça, on sait faire.'],
+      beatTrump: ['Dommage pour l’atout, mais vous avez insisté.'],
+      take: ['Je les prends, ça ne me dérange pas.', 'Je les prends. J’ai des projets pour elles.'],
+      transfer: ['Ça continue, avec mes amitiés.', 'Je ne crois pas que ce soit pour moi.'],
+      gotTransfer: ['Comme c’est aimable.'],
+      theyTake: ['Eh bien, quel joli tas.', 'Une main bien pleine vous va bien.'],
+      lastCard: ['Il m’en reste une. Vous devinez ?'],
+      deckOut: ['Le talon est épuisé. Ça devient intéressant.'],
+      waiting: ['Je ne vous presse pas. Enfin, presque.'],
+      out: ['Merci pour la partie, j’ai fini.', 'Je vous laisse continuer.'],
+      fool: ['Voilà, j’ai trop parlé.', 'C’est ma faute.'],
+      youFool: ['Ne vous en faites pas, ça arrive.', 'Vous avez mieux joué qu’il n’y paraît.'],
+    },
   },
   // Gleb: jovial, a proverb for every occasion.
   gleb: {
@@ -187,6 +241,23 @@ const PERSONAL: Record<string, Record<Lang, Lines>> = {
       out: ["And I'm a free man!", 'Work done, off I go!'],
       fool: ['Ah, no luck at cards for me…', 'Even an old hand slips.'],
       youFool: ["Cards aren't everything!", 'The first pancake is always lumpy!'],
+    },
+    fr: {
+      greet: ['Si je connaissais les cartes, je vivrais au bord de la mer !', 'Qui ne risque rien n’a rien !'],
+      lead: ['Le coup du cavalier… enfin, un six.', 'Qui va lentement va sûrement.'],
+      throwIn: ['Abondance de biens ne nuit pas !', 'Un petit supplément !'],
+      beat: ['Carte posée, carte jouée !', 'Même les sages se trompent !'],
+      beatTrump: ['Sans atout, je suis comme sans mains.'],
+      take: ['Je les prends, tout peut servir.', 'Je ramasse. Un cadeau ne se refuse pas !'],
+      transfer: ['Faites passer !', 'À un autre de s’en soucier !'],
+      gotTransfer: ['Tel est pris qui croyait prendre…'],
+      theyTake: ['Bon appétit, avec mes compliments !', 'Quand on donne, il faut prendre !'],
+      lastCard: ['La dernière est la meilleure.'],
+      deckOut: ['Le talon est fini. Fini la belle vie !'],
+      waiting: ['Réfléchir avant d’agir… mais finissez par agir !'],
+      out: ['Et me voilà libre !', 'Travail fait, je m’en vais !'],
+      fool: ['Ah, pas de chance aux cartes…', 'Même un vieux routier peut se tromper.'],
+      youFool: ['Les cartes, ce n’est pas tout !', 'La première crêpe est toujours ratée !'],
     },
   },
   // Lev: old, sly, has seen it all.
@@ -225,6 +296,23 @@ const PERSONAL: Record<string, Record<Lang, Lines>> = {
       fool: ['The memory is not what it was…', 'I put on the wrong glasses.'],
       youFool: ["Learn while I'm still around.", 'Never mind, it comes with age.'],
     },
+    fr: {
+      greet: ['Rien ne presse, les jeunes.', 'On va jouer à l’ancienne.'],
+      lead: ['Commençons doucement.'],
+      throwIn: ['J’en ai encore un peu.'],
+      beat: ['J’ai battu pire.', 'Ça, on l’a couvert il y a longtemps.'],
+      beatTrump: ['Les atouts, il faut les garder. Pas aujourd’hui.'],
+      take: ['Un vieil homme en a l’usage aussi.', 'Je ramasse. Je ne suis pas pressé.'],
+      transfer: ['Tenez, c’est pour vous, de bon cœur.', 'Je vous le lègue.'],
+      gotTransfer: ['Vous êtes rapide, dites donc.'],
+      theyTake: ['Ce tour-là, je l’ai vu dans ma jeunesse.', 'Prenez, ne soyez pas timide.'],
+      lastCard: ['Plus qu’une. Comme mes dents.'],
+      deckOut: ['Et voilà, le talon s’épuise. Comme la vie.'],
+      waiting: ['Réfléchissez donc. Je vais faire un somme.'],
+      out: ['L’expérience, voyez-vous.', 'C’est dans les vieux pots qu’on fait la meilleure soupe.'],
+      fool: ['La mémoire n’est plus ce qu’elle était…', 'J’ai mis les mauvaises lunettes.'],
+      youFool: ['Apprenez tant que je suis là.', 'Ce n’est rien, ça vient avec l’âge.'],
+    },
   },
   // Tamara: strict, like a schoolteacher.
   tamara: {
@@ -261,6 +349,23 @@ const PERSONAL: Record<string, Record<Lang, Lines>> = {
       out: ['Class dismissed.', 'I have finished. The rest carry on.'],
       fool: ['I overlooked it.', 'A fail for me today.'],
       youFool: ['We go over the mistakes tomorrow.', 'Sit down. Fail.'],
+    },
+    fr: {
+      greet: ['On joue honnêtement.', 'Silence à table. Nous commençons.'],
+      lead: ['Commençons par un exercice facile.'],
+      throwIn: ['Une question complémentaire.'],
+      beat: ['Ça ne passe pas.', 'Bonne réponse.'],
+      beatTrump: ['Je suis obligée d’utiliser un atout.'],
+      take: ['Je ramasse. Sans commentaire.', 'Je ramasse. Je regarderai ça à la maison.'],
+      transfer: ['Ce n’est pas à moi.', 'La question est redirigée.'],
+      gotTransfer: ['Je n’attendais pas cela de vous.'],
+      theyTake: ['Très bien.', 'Asseyez-vous et ramassez.'],
+      lastCard: ['Plus qu’une. Attention.'],
+      deckOut: ['Le talon est terminé. Concentrez-vous.'],
+      waiting: ['Le temps passe.'],
+      out: ['Le cours est terminé.', 'J’ai fini. Les autres continuent.'],
+      fool: ['Cela m’a échappé.', 'Un zéro pour moi aujourd’hui.'],
+      youFool: ['Nous corrigerons les fautes demain.', 'Asseyez-vous. Zéro.'],
     },
   },
   // Anton: young, serious, competitive. Says "ты" to everyone.
@@ -299,6 +404,23 @@ const PERSONAL: Record<string, Record<Lang, Lines>> = {
       fool: ['How did that happen?!', 'I demand a rematch.'],
       youFool: ['Nothing personal.', 'Keep practising.'],
     },
+    fr: {
+      greet: ['Je suis en forme aujourd’hui.', 'C’est parti.'],
+      lead: ['J’y vais.'],
+      throwIn: ['Tiens, encore une.'],
+      beat: ['Raté.', 'Facile.'],
+      beatTrump: ['Bon, un atout.'],
+      take: ['Bon, je ramasse.', 'Je ramasse. Je me rattraperai.'],
+      transfer: ['Attrape.', 'Pas mon problème.'],
+      gotTransfer: ['Sérieusement ?'],
+      theyTake: ['Voilà comment on fait.', 'Aucune chance.'],
+      lastCard: ['Une carte. J’y suis presque.'],
+      deckOut: ['Plus de talon. Ça devient sérieux.'],
+      waiting: ['Allez, joue.'],
+      out: ['Du travail propre.', 'Je suis sorti. À qui le tour ?'],
+      fool: ['Comment c’est arrivé ?!', 'J’exige une revanche.'],
+      youFool: ['Rien de personnel.', 'Continue à t’entraîner.'],
+    },
   },
   // Fyodor: grumpy, blames the deck.
   fyodor: {
@@ -335,6 +457,23 @@ const PERSONAL: Record<string, Record<Lang, Lines>> = {
       out: ['At last.', "I'm out. I can't believe it myself."],
       fool: ['No cards coming. The deck is marked.', 'I knew it.'],
       youFool: ['I told you so.', "For once it isn't me."],
+    },
+    fr: {
+      greet: ['Allez, qu’on en finisse.', 'Encore de mauvaises cartes.'],
+      lead: ['Tenez, battez ça.'],
+      throwIn: ['Prenez celle-là aussi.'],
+      beat: ['Voilà.', 'Si vous le dites.'],
+      beatTrump: ['Un atout de gâché. Tant pis.'],
+      take: ['Je ramasse. Ça vous va ?', 'Je ramasse. Comme toujours.'],
+      transfer: ['Reprenez ça.', 'Je ne veux pas de ce qui n’est pas à moi.'],
+      gotTransfer: ['Évidemment. Pour moi.'],
+      theyTake: ['Bien fait pour vous.', 'Restez donc avec.'],
+      lastCard: ['Une. Ne me portez pas la poisse.'],
+      deckOut: ['Plus de talon. De toute façon, il ne valait rien.'],
+      waiting: ['C’est encore long ?'],
+      out: ['Enfin.', 'Je suis sorti. Je n’y crois pas moi-même.'],
+      fool: ['Les cartes ne viennent pas. Le jeu est truqué.', 'Je le savais.'],
+      youFool: ['Je vous l’avais dit.', 'Pour une fois, ce n’est pas moi.'],
     },
   },
   // Lyuba: cheerful and chatty.
@@ -373,6 +512,23 @@ const PERSONAL: Record<string, Record<Lang, Lines>> = {
       fool: ['Lucky in love, at least!', 'Oh well, it was fun!'],
       youFool: ["You'll be lucky in love!", "Don't be sad, let's play again!"],
     },
+    fr: {
+      greet: ['Oh, que j’aime une partie de dourak !', 'Prem’s pour ne pas être le dourak !'],
+      lead: ['Tenez, avec tout mon cœur !'],
+      throwIn: ['Et encore une petite douceur !'],
+      beat: ['Regardez ce que j’ai !', 'Hop, et c’est parti !'],
+      beatTrump: ['Je ne vais pas pleurer un petit atout !'],
+      take: ['Je les prends, on ne gaspille pas de bonnes cartes.', 'Je prends, je prends, tout rentre à la maison !'],
+      transfer: ['Et ça, c’est pour mon voisin !', 'Oh, ce n’est pas pour moi !'],
+      gotTransfer: ['Oh, c’est malin, ça !'],
+      theyTake: ['Ce n’est rien, vous vous rattraperez !', 'Oh, tant de cartes ! Quelle misère !'],
+      lastCard: ['Une petite carte toute seule !'],
+      deckOut: ['Oh, plus de talon ! Déjà !'],
+      waiting: ['Vous dormez, là-bas ?'],
+      out: ['Et j’ai fini, je suis libre !', 'Hourra, je suis sortie !'],
+      fool: ['Heureuse en amour, au moins !', 'Tant pis, c’était amusant !'],
+      youFool: ['Malheureux au jeu, heureux en amour !', 'Ne soyez pas triste, rejouons !'],
+    },
   },
   // Kostya: a cheerful beginner, surprised when things work.
   kostya: {
@@ -410,6 +566,23 @@ const PERSONAL: Record<string, Record<Lang, Lines>> = {
       fool: ['Me again… oh well!', 'At least I tried!'],
       youFool: ["Whoa, I'm not the fool!", 'Hang on, did I win?!'],
     },
+    fr: {
+      greet: ['Oh, salut ! C’est à qui de donner ?', 'L’atout, c’est le plus fort, c’est ça ?'],
+      lead: ['Bon, je joue… celle-là !'],
+      throwIn: ['Je peux en ajouter ? Je peux !'],
+      beat: ['Ouah !', 'Ça a marché !'],
+      beatTrump: ['On a le droit à l’atout ? Alors atout !'],
+      take: ['Oups, je prends, je prends.', 'Je prends… attendez, tant que ça ?'],
+      transfer: ['Tenez, un petit cadeau !', 'On peut transférer, non ? Je transfère !'],
+      gotTransfer: ['Hé, ce n’est pas juste !'],
+      theyTake: ['Ouah, ça a marché !', 'Je suis aussi surpris que vous !'],
+      lastCard: ['J’en ai une ! C’est bien ?'],
+      deckOut: ['Où sont les cartes ? C’est tout ?'],
+      waiting: ['On a le droit de réfléchir aussi longtemps ?'],
+      out: ['Je suis sorti ? Sérieux ?!', 'J’ai gagné ? Je vais le dire à maman !'],
+      fool: ['Encore moi… tant pis !', 'Au moins, j’ai essayé !'],
+      youFool: ['Ouah, ce n’est pas moi le dourak !', 'Attendez, j’ai gagné ?!'],
+    },
   },
 };
 
@@ -420,7 +593,7 @@ const lastSaid = new Map<string, string>();
  * some, and the same line is not said twice running.
  */
 export function remark(characterId: string, what: Remark, lang: Lang): string {
-  const own = PERSONAL[characterId]?.[lang][what] ?? [];
+  const own = PERSONAL[characterId]?.[lang]?.[what] ?? [];
   const shared = COMMON[lang][what] ?? [];
   const pool = own.length > 0 && (shared.length === 0 || Math.random() < 0.6) ? own : shared;
   const previous = lastSaid.get(characterId);
