@@ -64,9 +64,20 @@ interface Tally {
   wins: number; // games the player was first to get out of
   fools: number;
   draws: number;
+  tracked: number; // how many of the games had their winner recorded
 }
 
-const NO_TALLY: Tally = { games: 0, wins: 0, fools: 0, draws: 0 };
+const NO_TALLY: Tally = { games: 0, wins: 0, fools: 0, draws: 0, tracked: 0 };
+
+/**
+ * A saved tally made whole. Games played before wins were counted left no record of who won
+ * them, so a tally from then starts its count of wins afresh.
+ */
+function wholeTally(saved: Partial<Tally> | undefined): Tally {
+  const tally = { ...NO_TALLY, ...saved };
+  if (saved?.tracked === undefined) tally.wins = 0;
+  return tally;
+}
 
 const DEFAULTS: Settings = {
   opponents: ['boris'],
@@ -442,9 +453,9 @@ export function startApp(): void {
 
   function finish(): void {
     const key = tallyKey();
-    // Tallies saved before wins were counted have no such field.
-    const tally = { ...NO_TALLY, ...tallies[key] };
+    const tally = wholeTally(tallies[key]);
     tally.games++;
+    tally.tracked++;
     // A win is being the first to get out; sharing a draw as one of the last two is not one.
     const drewOnly = game.loser === DRAW && !humanLeft;
     if (firstOut === HUMAN && !resigned && !drewOnly) tally.wins++;
@@ -959,8 +970,16 @@ export function startApp(): void {
     $('meta').innerHTML =
       `<span>${settings.transfer ? t.transfer : t.simple}</span>` +
       `<span class="trump-chip ${isRed(game.trump) ? 'red' : 'black'}">${t.trump} ${suitSvg(game.trump)}</span>`;
-    const tally = { ...NO_TALLY, ...tallies[tallyKey()] };
-    $('score').textContent = tally.games > 0 ? fill(t.tally, { ...tally }) : '';
+    const tally = wholeTally(tallies[tallyKey()]);
+    // One on one, every game is a win, a loss or a draw, so the wins follow from the rest
+    // even for games played before they were counted. With more players they do not, and
+    // the count then says how many games it covers.
+    const partial = tally.tracked < tally.games;
+    if (partial && settings.opponents.length === 1) {
+      tally.wins = tally.games - tally.fools - tally.draws;
+    }
+    const line = partial && settings.opponents.length > 1 ? t.tallyPartial : t.tally;
+    $('score').textContent = tally.games > 0 ? fill(line, { ...tally }) : '';
     $('btn-new').textContent = t.newGame;
     $('btn-settings').textContent = t.settings;
     $('btn-lang').textContent = settings.lang === 'ru' ? 'EN' : 'RU';
