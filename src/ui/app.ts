@@ -20,11 +20,13 @@ import {
 } from '../engine/game';
 import { observe } from '../engine/observe';
 import { cryptoRng } from '../engine/rng';
+import { PAGES } from '../seo';
 import { AiClient } from './aiClient';
 import { CHARACTERS, Character, Mood, avatarUrl, characterById, preloadAvatars } from './characters';
 import { Lang, STRINGS, Strings, fill } from './i18n';
 import { Geometry, Place, computeLayout } from './layout';
 import { REMARK_CHANCE, Remark, plainRemark, remark } from './phrases';
+import { PAGE_LANG, ROOT, browserLang } from './root';
 import { audition, prepareVoices, releaseVoices, speak, stopSpeaking } from './speech';
 
 const HUMAN = 0;
@@ -69,16 +71,6 @@ interface Tally {
 }
 
 const NO_TALLY: Tally = { games: 0, wins: 0, losses: 0, draws: 0, outs: 0 };
-
-/** The first of the browser's preferred languages that the game speaks; English failing both. */
-function browserLang(): Lang {
-  const wanted = navigator.languages?.length ? navigator.languages : [navigator.language];
-  for (const tag of wanted) {
-    const code = tag.toLowerCase().split('-')[0];
-    if (code === 'ru' || code === 'en') return code;
-  }
-  return 'en';
-}
 
 const DEFAULTS: Settings = {
   opponents: ['boris'],
@@ -140,12 +132,16 @@ export function startApp(): void {
   const resultEl = $('result');
   const settingsDialog = $<HTMLDialogElement>('settings');
   const discardDialog = $<HTMLDialogElement>('discard-view');
+  const aboutDialog = $<HTMLDialogElement>('about');
+  let aboutLang: Lang | undefined; // the language the About text was last written in
 
   const ai = new AiClient();
   let settings = load('durak.settings', DEFAULTS);
   // Stored choices may predate the roster or name someone no longer in it.
   const known = settings.opponents.filter((id) => CHARACTERS.some((c) => c.id === id)).slice(0, 3);
   settings = { ...settings, opponents: known.length > 0 ? known : DEFAULTS.opponents };
+  // A page in one language is in that language, whatever was chosen before.
+  if (PAGE_LANG) settings = { ...settings, lang: PAGE_LANG };
   // The counters last for the browser session, or until they are reset in Settings.
   const session = (): Storage => sessionStorage;
   let tallies = load<Record<string, Tally>>('durak.tally', {}, session);
@@ -203,7 +199,7 @@ export function startApp(): void {
       `</div><div class="card-back"></div></div>`;
     if (rank >= COURT_LOW) {
       // Use the picture if a file exists, as SVG or PNG; without one the drawn face remains.
-      const base = `${import.meta.env.BASE_URL}cards/${PICTURE_NAMES[rank - COURT_LOW]}_${SUIT_NAMES[suit]}`;
+      const base = `${ROOT}cards/${PICTURE_NAMES[rank - COURT_LOW]}_${SUIT_NAMES[suit]}`;
       const art = document.createElement('img');
       art.className = 'art';
       art.alt = '';
@@ -972,7 +968,7 @@ export function startApp(): void {
 
   function renderBar(): void {
     document.documentElement.lang = settings.lang;
-    document.title = t.title;
+    document.title = PAGES[settings.lang].title;
     $('brand').textContent = t.title;
     $('meta').innerHTML =
       `<span>${settings.transfer ? t.transfer : t.simple}</span>` +
@@ -983,7 +979,20 @@ export function startApp(): void {
     $('score').textContent = tally.games > 0 ? fill(line, { ...tally }) : '';
     $('btn-new').textContent = t.newGame;
     $('btn-settings').textContent = t.settings;
-    $('btn-lang').textContent = settings.lang === 'ru' ? 'EN' : 'RU';
+    // The switch is a real link to the page in the other language, for search engines and
+    // for opening in a new tab; an ordinary click switches in place (see below).
+    const other: Lang = settings.lang === 'ru' ? 'en' : 'ru';
+    const langLink = $<HTMLAnchorElement>('btn-lang');
+    langLink.textContent = other.toUpperCase();
+    langLink.href = `${ROOT}${other}/`;
+    langLink.hreflang = other;
+    $('btn-about').firstElementChild!.textContent = t.about;
+    $('btn-about').setAttribute('aria-label', t.about);
+    if (aboutLang !== settings.lang) {
+      aboutLang = settings.lang;
+      $('about-body').innerHTML = PAGES[settings.lang].about;
+      $('about-close').textContent = t.close;
+    }
   }
 
   // ------------------------------------------------------------------ dialogs
@@ -1167,10 +1176,19 @@ export function startApp(): void {
     e.stopPropagation();
     resign();
   });
-  $('btn-lang').addEventListener('click', () => {
+  $('btn-about').addEventListener('click', () => aboutDialog.showModal());
+  $('btn-lang').addEventListener('click', (e) => {
+    if (e.ctrlKey || e.metaKey || e.shiftKey) return; // a new tab or window: follow the link
+    e.preventDefault();
     settings = { ...settings, lang: settings.lang === 'ru' ? 'en' : 'ru' };
     t = STRINGS[settings.lang];
     save('durak.settings', settings);
+    // Keep the address in step with the language without reloading and losing the game.
+    try {
+      history.replaceState(null, '', `${ROOT}${settings.lang}/`);
+    } catch {
+      // Not every place a page can be opened from allows this; the switch still works.
+    }
     if (settings.speech) prepareVoices(settings.opponents.map(characterById), settings.lang);
     render();
   });

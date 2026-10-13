@@ -59,7 +59,7 @@ export function computeLayout(
 ): { places: Map<Card, Place>; geo: Geometry } {
   const n = s.hands.length;
   const cw = clamp(Math.min(W / 7.2, H / 5.8), 44, 108);
-  const ch = cw * 1.5; // two by three, the shape of the pictures in public/cards
+  const ch = cw * 1.5; // two by three, the shape of the pictures in public/durak/cards
   const places = new Map<Card, Place>();
 
   // Opponents share the top edge. With portraits on, each gets one beside their cards.

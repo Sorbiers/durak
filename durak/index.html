@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--seo-head-->
+  </head>
+  <body>
+    <header id="bar">
+      <h1 id="brand" class="brand">[[brand]]</h1>
+      <div class="meta" id="meta"></div>
+      <div class="score" id="score"></div>
+      <nav>
+        <button id="btn-new" class="ghost"></button>
+        <button id="btn-settings" class="ghost"></button>
+        <button id="btn-about" class="ghost"><span>[[about]]</span></button>
+        <a id="btn-lang" class="ghost" href="./[[other]]/" hreflang="[[other]]">[[OTHER]]</a>
+      </nav>
+    </header>
+
+    <main id="stage">
+      <svg id="aim" aria-hidden="true">
+        <defs>
+          <marker id="aim-head" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto">
+            <path d="M0 0 L10 5 L0 10 Z" />
+          </marker>
+        </defs>
+        <path id="aim-path" marker-end="url(#aim-head)" />
+      </svg>
+      <div id="trump-mark"></div>
+      <div id="deck-count" class="pile-label"></div>
+      <button id="discard-label" class="pile-label"></button>
+      <div id="seats"></div>
+      <div id="cards"></div>
+      <div id="actions">
+        <div id="status"></div>
+        <div id="buttons"></div>
+      </div>
+      <button id="resign" class="plain" hidden></button>
+      <div id="result" hidden></div>
+    </main>
+
+    <dialog id="settings"></dialog>
+    <dialog id="discard-view"></dialog>
+    <dialog id="about">
+      <form method="dialog">
+        <div id="about-body"><!--seo-about--></div>
+        <div class="buttons"><button id="about-close" class="primary">[[close]]</button></div>
+      </form>
+    </dialog>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

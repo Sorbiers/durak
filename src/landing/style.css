@@ -1,0 +1,513 @@
+/* SynArteum: a museum at night, lit by its own nervous system. */
+
+:root {
+  --void: #05060b;
+  --bone: #ece7dc;
+  --dim: rgba(236, 231, 220, 0.62);
+  --faint: rgba(236, 231, 220, 0.14);
+  /* One signal colour for each hall, as "r, g, b" so it can be used at any strength. */
+  --mint: 125, 255, 208;
+  --rose: 255, 122, 200;
+  --amber: 255, 186, 92;
+  --tone: var(--mint);
+  --display: 'Unbounded Variable', 'Arial Black', sans-serif;
+  --mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+  --body: 'Golos Text Variable', system-ui, sans-serif;
+}
+
+.tone-1 {
+  --tone: var(--mint);
+}
+.tone-2 {
+  --tone: var(--rose);
+}
+.tone-3 {
+  --tone: var(--amber);
+}
+
+html {
+  background: var(--void);
+  scroll-behavior: smooth;
+  scroll-snap-type: y proximity;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+  color: var(--bone);
+  font-family: var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Slow coloured light, one pool for each hall. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: -20vmax;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(38vmax 38vmax at 22% 30%, rgba(var(--mint), 0.11), transparent 62%),
+    radial-gradient(44vmax 44vmax at 80% 38%, rgba(var(--rose), 0.1), transparent 62%),
+    radial-gradient(46vmax 46vmax at 56% 86%, rgba(var(--amber), 0.08), transparent 62%);
+  animation: drift 28s ease-in-out infinite alternate;
+}
+/* A floor plan's grid, fading out towards the walls. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(236, 231, 220, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(236, 231, 220, 0.04) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(ellipse at 50% 40%, #000 20%, transparent 76%);
+}
+@keyframes drift {
+  to {
+    transform: translate3d(4vmax, -3vmax, 0) rotate(8deg);
+  }
+}
+
+#field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+a {
+  color: inherit;
+}
+
+/* ------------------------------------------------------------------- top bar */
+
+.top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px clamp(18px, 4vw, 52px);
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  background: linear-gradient(rgba(5, 6, 11, 0.85), rgba(5, 6, 11, 0));
+}
+.top a {
+  color: var(--dim);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.top a:hover {
+  color: var(--bone);
+}
+.top .mark {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--bone);
+}
+.top nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 2.4vw, 26px);
+}
+.top .lang {
+  padding: 5px 11px;
+  border: 1px solid var(--faint);
+  border-radius: 99px;
+  color: var(--bone);
+}
+.top .lang:hover {
+  border-color: rgba(var(--mint), 0.7);
+}
+
+/* ---------------------------------------------------------------------- hero */
+
+main,
+.foot {
+  position: relative;
+  z-index: 1;
+}
+
+section {
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: clamp(84px, 13vh, 150px) clamp(20px, 6vw, 96px) clamp(36px, 7vh, 80px);
+  scroll-snap-align: start;
+}
+
+.hero {
+  display: grid;
+  grid-template-rows: 1fr auto;
+}
+.hero-main {
+  align-self: center;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: clamp(11px, 1vw, 13px);
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+  color: rgb(var(--mint));
+}
+
+.name {
+  margin: 0.16em 0 0.12em -0.04em;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(2.5rem, 11.4vw, 12rem);
+  line-height: 0.94;
+  letter-spacing: -0.05em;
+  white-space: nowrap;
+}
+/* The art is drawn in outline only. The stroke is painted first and the fill, in the colour
+   of the night, over it, which hides the places where the letters' own contours overlap. */
+.name .art {
+  color: var(--void);
+  -webkit-text-stroke: clamp(2px, 0.3vw, 4.5px) var(--bone);
+  paint-order: stroke fill;
+  text-shadow: 0 0 70px rgba(var(--rose), 0.5);
+}
+
+.origin {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: clamp(0.78rem, 1.5vw, 1.1rem);
+  letter-spacing: 0.34em;
+  color: rgba(236, 231, 220, 0.36);
+}
+.origin b {
+  font-weight: 700;
+  color: rgb(var(--mint));
+}
+
+.lead {
+  max-width: 30ch;
+  margin: 2em 0 0;
+  font-size: clamp(1.08rem, 1.8vw, 1.5rem);
+  line-height: 1.45;
+}
+
+.index {
+  display: flex;
+  flex-wrap: wrap;
+  margin: clamp(28px, 6vh, 64px) 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--faint);
+}
+.index li {
+  flex: 1 1 230px;
+}
+.index a {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 16px;
+  align-items: baseline;
+  padding: 18px 20px 4px 0;
+  text-decoration: none;
+}
+.index i {
+  grid-row: span 2;
+  min-width: 2.2em;
+  font-family: var(--mono);
+  font-style: normal;
+  font-weight: 500;
+  font-size: 1.5rem;
+  color: rgb(var(--tone));
+  transition: text-shadow 0.25s;
+}
+.index a:hover i {
+  text-shadow: 0 0 18px rgb(var(--tone));
+}
+.index span {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: clamp(0.95rem, 1.3vw, 1.15rem);
+}
+.index small {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+/* --------------------------------------------------------------------- halls */
+
+.hall {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(24px, 7vw, 110px);
+  overflow: hidden;
+}
+/* The hall's number, written on the far wall. */
+.hall::before {
+  content: attr(data-no);
+  position: absolute;
+  right: 1vw;
+  bottom: -0.08em;
+  z-index: -1;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: clamp(11rem, 36vw, 34rem);
+  line-height: 0.8;
+  letter-spacing: -0.06em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(var(--tone), 0.17);
+  pointer-events: none;
+}
+.hall.flip::before {
+  right: auto;
+  left: 1vw;
+}
+.hall.flip .frame {
+  order: 2;
+}
+
+/* The exhibit: a symbol held together by neurons, with a museum's crop marks at the corners. */
+.frame {
+  position: relative;
+  display: block;
+  justify-self: center;
+  width: min(100%, 66vh);
+  aspect-ratio: 1;
+  --mark: rgba(var(--tone), 0.75);
+  background:
+    linear-gradient(var(--mark) 0 0) left top / 26px 1px,
+    linear-gradient(var(--mark) 0 0) left top / 1px 26px,
+    linear-gradient(var(--mark) 0 0) right top / 26px 1px,
+    linear-gradient(var(--mark) 0 0) right top / 1px 26px,
+    linear-gradient(var(--mark) 0 0) left bottom / 26px 1px,
+    linear-gradient(var(--mark) 0 0) left bottom / 1px 26px,
+    linear-gradient(var(--mark) 0 0) right bottom / 26px 1px,
+    linear-gradient(var(--mark) 0 0) right bottom / 1px 26px;
+  background-repeat: no-repeat;
+  text-decoration: none;
+}
+.frame canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 22px rgba(var(--tone), 0.28));
+  transition: transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.frame:hover canvas {
+  transform: scale(1.03);
+}
+.cap {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 9px);
+  white-space: nowrap;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(236, 231, 220, 0.42);
+}
+.cap b {
+  font-weight: 400;
+  color: rgb(var(--tone));
+}
+
+.plate .no {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.plate .no em {
+  margin-left: 1.4em;
+  font-style: normal;
+  color: rgb(var(--tone));
+}
+.plate .kind {
+  margin: 2.4em 0 0.7em;
+  font-family: var(--mono);
+  font-size: clamp(11.5px, 1.05vw, 13.5px);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgb(var(--tone));
+}
+.plate h2 {
+  margin: 0 0 0.42em;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(2rem, 5vw, 4.6rem);
+  line-height: 1;
+  letter-spacing: -0.035em;
+}
+.plate .text {
+  max-width: 36ch;
+  margin: 0;
+  font-size: clamp(1rem, 1.35vw, 1.22rem);
+  line-height: 1.6;
+  color: var(--dim);
+}
+
+.go {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 2.2em;
+  padding: 15px 22px 15px 26px;
+  border: 1px solid rgba(var(--tone), 0.55);
+  border-radius: 99px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition:
+    background 0.25s,
+    box-shadow 0.25s;
+}
+.go::after {
+  content: '→';
+  font-size: 16px;
+  color: rgb(var(--tone));
+  transition: transform 0.25s;
+}
+.go:hover,
+.go:focus-visible {
+  background: rgba(var(--tone), 0.13);
+  box-shadow: 0 0 46px rgba(var(--tone), 0.28);
+  outline: none;
+}
+.go:hover::after {
+  transform: translateX(6px);
+}
+
+/* ---------------------------------------------------------------------- foot */
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  padding: 22px clamp(20px, 6vw, 96px) 28px;
+  border-top: 1px solid var(--faint);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+/* -------------------------------------------------------------------- motion */
+
+/* The hero arrives in order; each hall wakes when it is walked into. */
+.hero-main > *,
+.index {
+  opacity: 0;
+  transform: translateY(18px);
+  animation: arrive 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+.hero-main > :nth-child(2) {
+  animation-delay: 0.12s;
+}
+.hero-main > :nth-child(3) {
+  animation-delay: 0.34s;
+}
+.hero-main > :nth-child(4) {
+  animation-delay: 0.5s;
+}
+.index {
+  animation-delay: 0.7s;
+}
+@keyframes arrive {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.js .hall .frame,
+.js .hall .plate > * {
+  opacity: 0;
+  transform: translateY(26px);
+  transition:
+    opacity 0.9s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.js .hall.seen .frame,
+.js .hall.seen .plate > * {
+  opacity: 1;
+  transform: none;
+}
+.js .hall.seen .plate > :nth-child(2) {
+  transition-delay: 0.08s;
+}
+.js .hall.seen .plate > :nth-child(3) {
+  transition-delay: 0.16s;
+}
+.js .hall.seen .plate > :nth-child(4) {
+  transition-delay: 0.24s;
+}
+.js .hall.seen .plate > :nth-child(5) {
+  transition-delay: 0.32s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  body::before,
+  .hero-main > *,
+  .index {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .js .hall .frame,
+  .js .hall .plate > * {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ------------------------------------------------------------- small screens */
+
+@media (max-width: 820px) {
+  .hall {
+    grid-template-columns: 1fr;
+    align-content: center;
+    gap: 26px;
+  }
+  .hall.flip .frame {
+    order: 0;
+  }
+  .frame {
+    width: min(74vw, 40vh);
+    justify-self: start;
+  }
+  .plate .kind {
+    margin-top: 1.4em;
+  }
+  .go {
+    margin-top: 1.5em;
+  }
+  .top nav a:not(.lang) {
+    display: none;
+  }
+}

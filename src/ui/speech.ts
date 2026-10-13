@@ -1,6 +1,7 @@
 import { Character } from './characters';
 import { Lang } from './i18n';
 import { clipName } from './phrases';
+import { ROOT } from './root';
 
 // Speech follows three rules. Nothing is fetched unless speech is switched on. A clip is
 // played only if it has already arrived. And voices never overlap or queue: while one remark
@@ -16,7 +17,7 @@ const quality = (v: SpeechSynthesisVoice): number =>
   /natural|neural|online/i.test(v.name) ? 3 : /google/i.test(v.name) ? 2 : v.localService ? 0 : 1;
 
 const canSynthesize = (): boolean => 'speechSynthesis' in window;
-const clipUrl = (key: string): string => `${import.meta.env.BASE_URL}voices/${key}.mp3`;
+const clipUrl = (key: string): string => `${ROOT}voices/${key}.mp3`;
 
 // Recorded clips, made ahead of time by scripts/voices.mjs. `index` says which exist; it is
 // 'absent' if none were published, and null until it has been asked for.
@@ -32,7 +33,7 @@ let turn = 0; // bumped whenever speech is cut off, so a clip still decoding doe
 function loadIndex(): Promise<void> {
   indexRequest ??= (async () => {
     try {
-      const response = await fetch(`${import.meta.env.BASE_URL}voices/index.json`);
+      const response = await fetch(`${ROOT}voices/index.json`);
       const listed = (await response.json()) as Record<string, Record<string, string[]>>;
       const built: Record<string, Record<string, Set<string>>> = {};
       for (const [id, byLang] of Object.entries(listed)) {

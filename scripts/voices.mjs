@@ -22,7 +22,7 @@
 //   tools/piper/venv/Scripts/python -m piper.download_voices --data-dir tools/piper/voices \
 //     ru_RU-denis-medium ru_RU-dmitri-medium ru_RU-irina-medium ru_RU-ruslan-medium
 //
-// Output: public/voices/<character>/ru/<name>.mp3 and public/voices/index.json.
+// Output: public/durak/voices/<character>/ru/<name>.mp3 and public/durak/voices/index.json.
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -33,7 +33,7 @@ import { clipName, linesFor } from '../src/ui/phrases.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
-const OUT = join(ROOT, 'public', 'voices');
+const OUT = join(ROOT, 'public', 'durak', 'voices');
 const LANG = 'ru';
 const venvPython = (dir) => join(dir, 'venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
 

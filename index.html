@@ -3,49 +3,90 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Дурак</title>
-    <link
-      rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%231d4a39'/%3E%3Cpath transform='translate(15 15) scale(.7)' fill='%23f2d594' d='M50 6C80 32 92 46 92 60c0 13-10 20-20 20-8 0-14-4-18-10 1 10 4 18 10 24H36c6-6 9-14 10-24-4 6-10 10-18 10C18 80 8 73 8 60 8 46 20 32 50 6Z'/%3E%3C/svg%3E"
-    />
+    <!--seo-head-->
   </head>
   <body>
-    <header id="bar">
-      <div id="brand" class="brand">Дурак</div>
-      <div class="meta" id="meta"></div>
-      <div class="score" id="score"></div>
+    <canvas id="field" aria-hidden="true"></canvas>
+
+    <header class="top">
+      <a class="mark" href="#top">SynArteum</a>
       <nav>
-        <button id="btn-new" class="ghost"></button>
-        <button id="btn-settings" class="ghost"></button>
-        <button id="btn-lang" class="ghost"></button>
+        <a href="#hall-1">I</a>
+        <a href="#hall-2">II</a>
+        <a href="#hall-3">III</a>
+        <a id="lang" class="lang" href="./[[other]]/" hreflang="[[other]]">[[OTHER]]</a>
       </nav>
     </header>
 
-    <main id="stage">
-      <svg id="aim" aria-hidden="true">
-        <defs>
-          <marker id="aim-head" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto">
-            <path d="M0 0 L10 5 L0 10 Z" />
-          </marker>
-        </defs>
-        <path id="aim-path" marker-end="url(#aim-head)" />
-      </svg>
-      <div id="trump-mark"></div>
-      <div id="deck-count" class="pile-label"></div>
-      <button id="discard-label" class="pile-label"></button>
-      <div id="seats"></div>
-      <div id="cards"></div>
-      <div id="actions">
-        <div id="status"></div>
-        <div id="buttons"></div>
-      </div>
-      <button id="resign" class="plain" hidden></button>
-      <div id="result" hidden></div>
+    <main>
+      <section class="hero" id="top">
+        <div class="hero-main">
+          <p class="eyebrow" data-t="museum">[[museum]]</p>
+          <h1 class="name"><span>Syn</span><span class="art">Art</span><span>eum</span></h1>
+          <p class="origin" aria-hidden="true"><b>SYN</b>thetic <b>ART</b> mus<b>EUM</b></p>
+          <p class="lead" data-t="lead">[[lead]]</p>
+        </div>
+        <ol class="index">
+          <li class="tone-1">
+            <a href="#hall-1"><i>I</i><span data-t="n1">[[n1]]</span><small data-t="k1">[[k1]]</small></a>
+          </li>
+          <li class="tone-2">
+            <a href="#hall-2"><i>II</i><span data-t="n2">[[n2]]</span><small data-t="k2">[[k2]]</small></a>
+          </li>
+          <li class="tone-3">
+            <a href="#hall-3"><i>III</i><span data-t="n3">[[n3]]</span><small data-t="k3">[[k3]]</small></a>
+          </li>
+        </ol>
+      </section>
+
+      <section class="hall tone-1" id="hall-1" data-no="I" data-emblem="spade">
+        <a class="frame" href="./durak/[[langdir]]" tabindex="-1" aria-hidden="true">
+          <canvas></canvas>
+          <span class="cap"><span data-t="exhibit">[[exhibit]]</span> 001 · <b></b> <span data-t="neurons">[[neurons]]</span></span>
+        </a>
+        <div class="plate">
+          <p class="no"><span data-t="hall">[[hall]]</span> I <em>01 / 03</em></p>
+          <p class="kind" data-t="k1">[[k1]]</p>
+          <h2 data-t="n1">[[n1]]</h2>
+          <p class="text" data-t="t1">[[t1]]</p>
+          <a class="go" href="./durak/[[langdir]]"><span data-t="c1">[[c1]]</span></a>
+        </div>
+      </section>
+
+      <section class="hall flip tone-2" id="hall-2" data-no="II" data-emblem="eye">
+        <a class="frame" href="[[dream]]" tabindex="-1" aria-hidden="true">
+          <canvas></canvas>
+          <span class="cap"><span data-t="exhibit">[[exhibit]]</span> 002 · <b></b> <span data-t="neurons">[[neurons]]</span></span>
+        </a>
+        <div class="plate">
+          <p class="no"><span data-t="hall">[[hall]]</span> II <em>02 / 03</em></p>
+          <p class="kind" data-t="k2">[[k2]]</p>
+          <h2 data-t="n2">[[n2]]</h2>
+          <p class="text" data-t="t2">[[t2]]</p>
+          <a class="go" href="[[dream]]" rel="noopener"><span data-t="c2">[[c2]]</span></a>
+        </div>
+      </section>
+
+      <section class="hall tone-3" id="hall-3" data-no="III" data-emblem="cup">
+        <a class="frame" href="[[coffee]]" tabindex="-1" aria-hidden="true">
+          <canvas></canvas>
+          <span class="cap"><span data-t="exhibit">[[exhibit]]</span> 003 · <b></b> <span data-t="neurons">[[neurons]]</span></span>
+        </a>
+        <div class="plate">
+          <p class="no"><span data-t="hall">[[hall]]</span> III <em>03 / 03</em></p>
+          <p class="kind" data-t="k3">[[k3]]</p>
+          <h2 data-t="n3">[[n3]]</h2>
+          <p class="text" data-t="t3">[[t3]]</p>
+          <a class="go" href="[[coffee]]" rel="noopener"><span data-t="c3">[[c3]]</span></a>
+        </div>
+      </section>
     </main>
 
-    <dialog id="settings"></dialog>
-    <dialog id="discard-view"></dialog>
+    <footer class="foot">
+      <span>© 2026 SynArteum</span>
+      <span data-t="foot">[[foot]]</span>
+    </footer>
 
-    <script type="module" src="/src/main.ts"></script>
+    <script type="module" src="/src/landing/main.ts"></script>
   </body>
 </html>

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /durak/voices/
+
+Sitemap: https://synarteum.com/sitemap.xml

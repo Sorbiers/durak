@@ -63,8 +63,10 @@ button {
 }
 
 .brand {
+  margin: 0;
   font-family: var(--display);
   font-size: 30px;
+  font-weight: 400;
   letter-spacing: 0.04em;
   color: var(--brass-bright);
   text-shadow: 0 1px 0 #000;
@@ -124,6 +126,10 @@ button {
 .ghost:hover {
   background: var(--brass);
   color: var(--walnut);
+}
+a.ghost {
+  text-decoration: none;
+  cursor: pointer;
 }
 
 /* -------------------------------------------------------------------- table */
@@ -1040,6 +1046,44 @@ dialog h2 {
   line-height: 1.45;
   color: rgba(245, 238, 221, 0.6);
 }
+/* The About text scrolls inside the dialog, so the button to close it stays in view. */
+#about {
+  width: min(94vw, 720px);
+}
+#about form {
+  box-sizing: border-box;
+  max-height: calc(94vh - 2px);
+}
+#about-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(216, 178, 106, 0.5) transparent;
+  font-size: 14.5px;
+  line-height: 1.55;
+}
+#about-body h3 {
+  margin: 18px 0 6px;
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--brass-bright);
+}
+#about-body p {
+  margin: 0 0 10px;
+}
+#about-body ul {
+  margin: 0 0 10px;
+  padding-left: 20px;
+}
+#about-body li {
+  margin-bottom: 5px;
+}
+#about-body a {
+  color: var(--brass-bright);
+}
+
 dialog .buttons {
   display: flex;
   justify-content: flex-end;
@@ -1097,6 +1141,13 @@ dialog .buttons [data-act='reset'] {
   #bar nav {
     margin-left: auto;
   }
+  /* No room for the word in a narrow bar: a question mark stands for "About". */
+  #btn-about span {
+    display: none;
+  }
+  #btn-about::after {
+    content: '?';
+  }
   #actions {
     flex-direction: column;
     gap: 8px;
@@ -1109,6 +1160,12 @@ dialog .buttons [data-act='reset'] {
 @media (max-width: 480px) {
   .brand {
     display: none;
+  }
+  /* On a phone the bar has room for the trump suit but not for the word beside it. */
+  .trump-chip {
+    gap: 0;
+    padding: 3px 8px;
+    font-size: 0;
   }
 }
 

@@ -1,5 +1,6 @@
 import { Rating } from '../ai';
 import { Lang } from './i18n';
+import { ROOT } from './root';
 
 export type Mood =
   | 'neutral'
@@ -12,7 +13,7 @@ export type Mood =
   | 'worried';
 
 export interface Character {
-  id: string; // also the folder under public/avatars
+  id: string; // also the folder under public/durak/avatars
   name: Record<Lang, string>;
   style: 'real' | 'cartoon';
   rating: Rating;
@@ -111,11 +112,11 @@ export const characterById = (id: string): Character =>
   CHARACTERS.find((c) => c.id === id) ?? CHARACTERS[0];
 
 export const avatarUrl = (c: Character, mood: Mood): string =>
-  `${import.meta.env.BASE_URL}avatars/${c.id}/${c.moods[mood]}.webp`;
+  `${ROOT}avatars/${c.id}/${c.moods[mood]}.webp`;
 
 /** Fetches a character's pictures ahead of time so a change of mood does not flicker. */
 export function preloadAvatars(c: Character): void {
   for (const index of new Set(Object.values(c.moods))) {
-    new Image().src = `${import.meta.env.BASE_URL}avatars/${c.id}/${index}.webp`;
+    new Image().src = `${ROOT}avatars/${c.id}/${index}.webp`;
   }
 }

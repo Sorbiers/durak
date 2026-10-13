@@ -92,11 +92,11 @@ tallied separately for each strength. The roster, with names, usual ratings and
 which picture shows which mood, is `src/ui/characters.ts`; the remarks are in
 `src/ui/phrases.ts`.
 
-Portraits live in `public/avatars/<id>/0.webp` to `8.webp`: nine expressions per character,
+Portraits live in `public/durak/avatars/<id>/0.webp` to `8.webp`: nine expressions per character,
 cut from a three-by-three sheet. To add or replace a character, cut a new sheet the same way
 and add an entry to the roster.
 
-Russian remarks are spoken from clips in `public/voices/`, recorded ahead of time by a free
+Russian remarks are spoken from clips in `public/durak/voices/`, recorded ahead of time by a free
 speech engine running locally. `npm run voices` records whatever is missing after lines are
 added or edited; the casting and setup notes are at the top of `scripts/voices.mjs`. Two
 engines are supported:
@@ -135,18 +135,31 @@ The rest are off unless noted:
 
 ## Deploying
 
-The game is live at https://synarteum.com, served as static files by nginx. `deploy.bat` (or
-`./deploy.sh`) builds the site, uploads it over SSH and swaps it into `/opt/durak/web`. The
-server, key and port come from `deploy.env`, which is not committed; copy
-`deploy.env.example` and fill it in.
+The site is https://synarteum.com, served as static files by nginx: the front page of
+SynArteum at the root and the game in `/durak/`. `deploy.bat` (or `./deploy.sh`) builds the
+site, uploads it over SSH and swaps it into `/opt/durak/web`. The server, key and port come
+from `deploy.env`, which is not committed; copy `deploy.env.example` and fill it in.
 
 `deploy/synarteum.conf` is only the bootstrap nginx site. The live copy in
 `/etc/nginx/conf.d` has since been edited by certbot for HTTPS, and the deploy script leaves
 it alone, so changes to headers must be made on the server.
 
+### The site and search engines
+
+The repository builds two pages. `index.html` is the front page of SynArteum (a SYNthetic ART
+musEUM): three halls, of which this game is the first; its code is in `src/landing/`.
+`durak/index.html` is the game, and its pictures and sounds are in `public/durak/`.
+
+Each of the two is written out at three addresses: its own folder, which picks the language
+from the browser, and `ru/` and `en/` inside it, one language each. Every address has its own
+title, description and texts in its HTML, names the other two as translations, and is listed
+in `sitemap.xml`, which the build also writes. The texts and the site's address live in
+`src/seo.ts`; `vite.config.ts` puts them into the pages. `public/robots.txt` points at the
+sitemap, and the `og-*.jpg` files are the pictures shown when a link is shared.
+
 ## Card pictures
 
-The jacks, queens, kings and aces in `public/cards/` are the Russian «атласные» designs drawn
+The jacks, queens, kings and aces in `public/durak/cards/` are the Russian «атласные» designs drawn
 by Dmitry Fomin, released into the public domain (CC0) on Wikimedia Commons, cut out of his
 sheet "Atlasnye playing cards deck.svg". A card is named `rank_suit.svg` or `rank_suit.png`, for example
 `king_hearts.svg`. Replace a file to change a picture; delete it and the card falls back to a
@@ -158,7 +171,7 @@ plain drawn face.
   (CC0), from Wikimedia Commons.
 - Voices: recorded with [Silero](https://github.com/snakers4/silero-models) text-to-speech.
   Its models carry their own licence, which restricts commercial use; check it before using
-  the clips in `public/voices/` for anything commercial.
+  the clips in `public/durak/voices/` for anything commercial.
 - Portraits: generated images of people who do not exist.
 - Fonts: Oranienbaum and Golos Text, under the SIL Open Font License.
 
