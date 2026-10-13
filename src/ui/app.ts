@@ -53,6 +53,7 @@ interface Settings {
   autoDiscard: boolean; // sweep a beaten bout away without waiting for the player
   hints: boolean; // offer the Hint button
   showArrow: boolean; // draw the arrow from the attacker to the defender
+  trumpCount: boolean; // after a game, say how many trumps each player received
   showPlayable: boolean; // dim the cards that cannot be played now
   showTrumps: boolean; // mark trump cards with a brass band
   lang: Lang;
@@ -60,9 +61,12 @@ interface Settings {
 
 interface Tally {
   games: number;
+  wins: number; // games the player was first to get out of
   fools: number;
   draws: number;
 }
+
+const NO_TALLY: Tally = { games: 0, wins: 0, fools: 0, draws: 0 };
 
 const DEFAULTS: Settings = {
   opponents: ['boris'],
@@ -79,6 +83,7 @@ const DEFAULTS: Settings = {
   autoDiscard: false,
   hints: true,
   showArrow: true,
+  trumpCount: false,
   showPlayable: false,
   showTrumps: false,
   lang: navigator.language.toLowerCase().startsWith('ru') ? 'ru' : 'en',
@@ -150,6 +155,9 @@ export function startApp(): void {
   let lastWinner: number | undefined; // whoever got out first
   let lastFool: number | undefined; // whoever was left holding cards; unset after a draw
   let firstOut: number | undefined; // the first seat to get rid of every card this game
+  // Trumps each seat was dealt and later drew from the deck, to show the deal plays no favourites.
+  let trumpsDealt: number[] = [];
+  let trumpsDrawn: number[] = [];
   let geo: Geometry;
   let lastWhere: Place['where'][] = [];
   let seatEls: HTMLElement[] = [];
@@ -232,6 +240,8 @@ export function startApp(): void {
       winner,
     );
     firstOut = undefined;
+    trumpsDealt = game.hands.map((h) => h.filter((c) => suitOf(c) === game.trump).length);
+    trumpsDrawn = game.hands.map(() => 0);
     const id = ++gameId;
     clearTable?.(); // release a bout of the previous deal that was waiting to be cleared
     clearTable = null;
@@ -327,6 +337,10 @@ export function startApp(): void {
     hintPending = false;
     const next = cloneState(game);
     applyAction(next, a);
+    const wasInDeck = new Set(game.deck);
+    next.hands.forEach((hand, p) => {
+      for (const c of hand) if (wasInDeck.has(c) && suitOf(c) === next.trump) trumpsDrawn[p]++;
+    });
     comment(seat, a, next, id);
     const swept = game.attacks.length > 0 && next.attacks.length === 0;
     if (swept && (move.type === 'defend' || move.type === 'throw')) {
@@ -363,7 +377,9 @@ export function startApp(): void {
       // Hands empty one move at a time, so this is whoever just played their last card.
       firstOut = [seat, ...game.hands.keys()].find((p) => isOut(p));
     }
-    if (game.phase !== OVER && isOut(HUMAN)) humanLeft = true;
+    // The player has left the game once a new bout begins without them. Going out in the very
+    // bout that ends the game in a draw makes them one of those who drew.
+    if (game.phase !== OVER && game.attacks.length === 0 && isOut(HUMAN)) humanLeft = true;
     render();
     await sleep(swept ? 520 : 200);
   }
@@ -426,8 +442,12 @@ export function startApp(): void {
 
   function finish(): void {
     const key = tallyKey();
-    const tally = tallies[key] ?? { games: 0, fools: 0, draws: 0 };
+    // Tallies saved before wins were counted have no such field.
+    const tally = { ...NO_TALLY, ...tallies[key] };
     tally.games++;
+    // A win is being the first to get out; sharing a draw as one of the last two is not one.
+    const drewOnly = game.loser === DRAW && !humanLeft;
+    if (firstOut === HUMAN && !resigned && !drewOnly) tally.wins++;
     if (game.loser === HUMAN) tally.fools++;
     if (game.loser === DRAW) tally.draws++;
     tallies = { ...tallies, [key]: tally };
@@ -448,8 +468,11 @@ export function startApp(): void {
       for (let p = 1; p < game.hands.length; p++) setMood(p, 'happy', Infinity);
       react(1 + ((Math.random() * (game.hands.length - 1)) | 0), 'youFool');
     }
-    resultEl.innerHTML = `<p></p><button class="primary">${t.again}</button>`;
+    resultEl.innerHTML = `<p></p><small></small><button class="primary">${t.again}</button>`;
     resultEl.querySelector('p')!.textContent = text;
+    resultEl.querySelector('small')!.textContent = settings.trumpCount
+      ? `${t.trumpCount}: ` + game.hands.map((_, p) => `${seatName(p)} ${trumpsDealt[p]} + ${trumpsDrawn[p]}`).join(' · ')
+      : '';
     resultEl.querySelector('button')!.addEventListener('click', deal);
     resultEl.className = game.loser === HUMAN ? 'lost' : '';
     resultEl.hidden = false;
@@ -936,7 +959,7 @@ export function startApp(): void {
     $('meta').innerHTML =
       `<span>${settings.transfer ? t.transfer : t.simple}</span>` +
       `<span class="trump-chip ${isRed(game.trump) ? 'red' : 'black'}">${t.trump} ${suitSvg(game.trump)}</span>`;
-    const tally = tallies[tallyKey()] ?? { games: 0, fools: 0, draws: 0 };
+    const tally = { ...NO_TALLY, ...tallies[tallyKey()] };
     $('score').textContent = tally.games > 0 ? fill(t.tally, { ...tally }) : '';
     $('btn-new').textContent = t.newGame;
     $('btn-settings').textContent = t.settings;
@@ -1007,6 +1030,7 @@ export function startApp(): void {
       check('showPlayable', t.setPlayable, settings.showPlayable) +
       check('showTrumps', t.setTrumps, settings.showTrumps) +
       check('showArrow', t.setArrow, settings.showArrow) +
+      check('trumpCount', t.setTrumpCount, settings.trumpCount) +
       `</div></div>` +
       `<p class="fine">${t.fairness}</p>` +
       `<div class="buttons"><button type="button" class="plain" data-act="reset">${t.resetTally}</button>` +
@@ -1064,7 +1088,7 @@ export function startApp(): void {
       save('durak.settings', settings);
       render();
     };
-    const boxes = ['largePortraits', 'phrases', 'speech', 'showKnown', 'autoDiscard', 'hints', 'showPlayable', 'showTrumps', 'showArrow'] as const;
+    const boxes = ['largePortraits', 'phrases', 'speech', 'showKnown', 'autoDiscard', 'hints', 'showPlayable', 'showTrumps', 'showArrow', 'trumpCount'] as const;
     for (const name of boxes) {
       const box = form.querySelector<HTMLInputElement>(`[name=${name}]`)!;
       box.addEventListener('change', () => {

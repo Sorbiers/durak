@@ -780,6 +780,14 @@ button.hinted {
 #result[hidden] {
   display: none;
 }
+#result small {
+  max-width: 34em;
+  font-size: 13px;
+  color: rgba(245, 238, 221, 0.7);
+}
+#result small:empty {
+  display: none;
+}
 #result p {
   margin: 0;
   max-width: 18em;
