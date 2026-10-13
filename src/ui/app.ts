@@ -59,25 +59,16 @@ interface Settings {
   lang: Lang;
 }
 
+/** How the player's games ended. Every game ends one of four ways, so the four add up. */
 interface Tally {
   games: number;
-  wins: number; // games the player was first to get out of
-  fools: number;
-  draws: number;
-  tracked: number; // how many of the games had their winner recorded
+  wins: number; // first to get out
+  losses: number; // left as the fool, or gave up
+  draws: number; // one of the last two, who went out together
+  outs: number; // got out, though not first
 }
 
-const NO_TALLY: Tally = { games: 0, wins: 0, fools: 0, draws: 0, tracked: 0 };
-
-/**
- * A saved tally made whole. Games played before wins were counted left no record of who won
- * them, so a tally from then starts its count of wins afresh.
- */
-function wholeTally(saved: Partial<Tally> | undefined): Tally {
-  const tally = { ...NO_TALLY, ...saved };
-  if (saved?.tracked === undefined) tally.wins = 0;
-  return tally;
-}
+const NO_TALLY: Tally = { games: 0, wins: 0, losses: 0, draws: 0, outs: 0 };
 
 const DEFAULTS: Settings = {
   opponents: ['boris'],
@@ -100,18 +91,18 @@ const DEFAULTS: Settings = {
   lang: navigator.language.toLowerCase().startsWith('ru') ? 'ru' : 'en',
 };
 
-function load<T>(key: string, fallback: T): T {
+function load<T>(key: string, fallback: T, store: () => Storage = () => localStorage): T {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = store().getItem(key);
     return raw ? { ...fallback, ...JSON.parse(raw) } : fallback;
   } catch {
     return fallback;
   }
 }
 
-function save(key: string, value: unknown): void {
+function save(key: string, value: unknown, store: () => Storage = () => localStorage): void {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    store().setItem(key, JSON.stringify(value));
   } catch {
     // Storage may be unavailable (private window); the game works without it.
   }
@@ -145,7 +136,9 @@ export function startApp(): void {
   // Stored choices may predate the roster or name someone no longer in it.
   const known = settings.opponents.filter((id) => CHARACTERS.some((c) => c.id === id)).slice(0, 3);
   settings = { ...settings, opponents: known.length > 0 ? known : DEFAULTS.opponents };
-  let tallies = load<Record<string, Tally>>('durak.tally', {});
+  // The counters last for the browser session, or until they are reset in Settings.
+  const session = (): Storage => sessionStorage;
+  let tallies = load<Record<string, Tally>>('durak.tally', {}, session);
   let t: Strings = STRINGS[settings.lang];
 
   let game: GameState;
@@ -453,16 +446,15 @@ export function startApp(): void {
 
   function finish(): void {
     const key = tallyKey();
-    const tally = wholeTally(tallies[key]);
+    const tally = { ...NO_TALLY, ...tallies[key] };
     tally.games++;
-    tally.tracked++;
-    // A win is being the first to get out; sharing a draw as one of the last two is not one.
-    const drewOnly = game.loser === DRAW && !humanLeft;
-    if (firstOut === HUMAN && !resigned && !drewOnly) tally.wins++;
-    if (game.loser === HUMAN) tally.fools++;
-    if (game.loser === DRAW) tally.draws++;
+    // A draw between two others, after the player had left, is not the player's draw.
+    if (game.loser === HUMAN) tally.losses++;
+    else if (game.loser === DRAW && !humanLeft) tally.draws++;
+    else if (firstOut === HUMAN) tally.wins++;
+    else tally.outs++;
     tallies = { ...tallies, [key]: tally };
-    save('durak.tally', tallies);
+    save('durak.tally', tallies, session);
     // The winner leads the next game. After a resignation with nobody out yet, the only
     // possible winner is the lone opponent of a two-player game.
     lastWinner = firstOut ?? (resigned && game.hands.length === 2 ? 1 : undefined);
@@ -970,15 +962,9 @@ export function startApp(): void {
     $('meta').innerHTML =
       `<span>${settings.transfer ? t.transfer : t.simple}</span>` +
       `<span class="trump-chip ${isRed(game.trump) ? 'red' : 'black'}">${t.trump} ${suitSvg(game.trump)}</span>`;
-    const tally = wholeTally(tallies[tallyKey()]);
-    // One on one, every game is a win, a loss or a draw, so the wins follow from the rest
-    // even for games played before they were counted. With more players they do not, and
-    // the count then says how many games it covers.
-    const partial = tally.tracked < tally.games;
-    if (partial && settings.opponents.length === 1) {
-      tally.wins = tally.games - tally.fools - tally.draws;
-    }
-    const line = partial && settings.opponents.length > 1 ? t.tallyPartial : t.tally;
+    const tally = { ...NO_TALLY, ...tallies[tallyKey()] };
+    // One on one there is no getting out without being first.
+    const line = settings.opponents.length > 1 ? t.tally : t.tallyDuel;
     $('score').textContent = tally.games > 0 ? fill(line, { ...tally }) : '';
     $('btn-new').textContent = t.newGame;
     $('btn-settings').textContent = t.settings;
@@ -1092,7 +1078,7 @@ export function startApp(): void {
     form.querySelector('[data-act=close]')!.addEventListener('click', () => settingsDialog.close());
     form.querySelector('[data-act=reset]')!.addEventListener('click', () => {
       tallies = {};
-      save('durak.tally', tallies);
+      save('durak.tally', tallies, session);
       renderBar();
     });
     // These only change what is shown or heard, so they take effect at once, mid-game included.
