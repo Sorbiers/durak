@@ -8,6 +8,7 @@ import {
   GameState,
   PASS,
   TAKE,
+  nextInGame,
   openAction,
 } from '../engine/game';
 import { Rng } from '../engine/rng';
@@ -18,6 +19,8 @@ const JACK = 5;
 const LATE_DECK = 3;
 // How many ranks dearer a lead may be for each extra card of that rank held.
 const PAIR_BONUS = 6;
+// The dearest trump a player throws in early to win the lead: the eight.
+const SMALL_TRUMP = RANKS + 2;
 
 /** How much a card is worth keeping: rank, with every trump above every plain card. */
 export function cardValue(c: Card, trump: number): number {
@@ -48,6 +51,20 @@ export function actionKind(a: number): number {
   if (a >= A_TRANSFER) return A_TRANSFER;
   if (a >= A_DEFEND) return A_DEFEND + (((a - A_DEFEND) / DECK_SIZE) | 0); // by card answered
   return 0;
+}
+
+/**
+ * What the seat to act, throwing in from the side, has at stake in the defender picking up.
+ * The turn then skips the defender: the next player gets the lead (+1) and the one after that
+ * is attacked (-1). The main attacker, anyone at a two-handed table and anyone further round
+ * has nothing at stake (0). Tuned by self-play for подкидной only; in переводной, where an
+ * attack can be passed along, holding back cost more than it saved.
+ */
+function stakeInPickUp(s: GameState): number {
+  if (s.rules.transfer || s.turn === s.attacker) return 0;
+  const leads = nextInGame(s, s.defender);
+  if (leads === s.turn) return 1;
+  return nextInGame(s, leads) === s.turn ? -1 : 0;
 }
 
 /**
@@ -119,6 +136,12 @@ export function heuristicAction(s: GameState, legal: number[], rng: Rng, eps = 0
   if (best === PASS) return PASS;
   if (s.deck.length === 0 && hand.length === 1) return best; // the last card: out of the game
   if (s.phase === ATTACK) {
+    const stake = stakeInPickUp(s);
+    // Next in the line of fire: shed small cards, but nothing that might tip the defender
+    // into picking up. Better that they beat it all and lead at someone else.
+    if (stake < 0) return bestValue <= TEN ? best : PASS;
+    // The lead is the prize if the defender picks up, and worth a small trump from the start.
+    if (stake > 0 && bestValue <= SMALL_TRUMP) return best;
     // Press the defender with every plain card, and with trumps too once the deck runs out.
     return bestValue < RANKS || late ? best : PASS;
   }

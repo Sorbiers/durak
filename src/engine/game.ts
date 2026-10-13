@@ -173,7 +173,7 @@ function canAdd(s: GameState): boolean {
 }
 
 /** Next seat clockwise after `p` that is still in the game, or `p` if there is none. */
-function nextInGame(s: GameState, p: number): number {
+export function nextInGame(s: GameState, p: number): number {
   const n = s.hands.length;
   const deckEmpty = s.deck.length === 0;
   for (let k = 1; k < n; k++) {
