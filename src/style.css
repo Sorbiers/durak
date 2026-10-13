@@ -189,11 +189,16 @@ a.ghost {
   top: 0;
   width: var(--cw);
   height: var(--ch);
-  transition: transform 0.42s cubic-bezier(0.2, 0.85, 0.25, 1);
+  /* --wait is how long this card holds back before it moves and turns (see render). */
+  transition: transform 0.42s cubic-bezier(0.2, 0.85, 0.25, 1) var(--wait, 0s);
   will-change: transform;
   perspective: 600px;
 }
-.instant .card {
+/* Gathering the cards on the deck for a new deal happens at once, turning them included. */
+.instant .card,
+.instant .card-inner,
+.instant .card-face,
+.instant .card-back {
   transition: none;
 }
 
@@ -202,7 +207,7 @@ a.ghost {
   inset: 0;
   transform-style: preserve-3d;
   transform: rotateY(180deg);
-  transition: transform 0.36s ease;
+  transition: transform 0.36s ease var(--wait, 0s);
 }
 .card.up .card-inner {
   transform: rotateY(0);
@@ -218,7 +223,7 @@ a.ghost {
   position: absolute;
   inset: 0;
   border-radius: calc(var(--cw) * 0.075);
-  transition: visibility 0s linear 0.11s;
+  transition: visibility 0s linear calc(var(--wait, 0s) + 0.11s);
   box-shadow:
     0 1px 1px rgba(0, 0, 0, 0.35),
     0 calc(var(--cw) * 0.05) calc(var(--cw) * 0.12) rgba(0, 0, 0, 0.3);
@@ -1188,7 +1193,7 @@ dialog .buttons [data-act='reset'] {
   }
   .card-face,
   .card-back {
-    transition-delay: 0s;
+    transition-delay: var(--wait, 0s);
   }
   .card.hinted .card-face,
   .dots i {

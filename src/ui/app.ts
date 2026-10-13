@@ -774,9 +774,11 @@ export function startApp(): void {
         ? { ...layout.places.get(c)!, x: geo.deck.x, y: geo.deck.y, rot: 0, scale: 1, up: false }
         : layout.places.get(c)!;
       // Cards drawn from the deck leave one after another, after the table has been cleared.
+      // The wait applies to the turn as well as the move, so that a card bound for the
+      // player's hand leaves the deck face down and turns over on the way.
       const delay = !instant && lastWhere[c] === 'deck' && p.where === 'hand' ? 260 + drawn++ * 70 : 0;
       if (!instant) lastWhere[c] = p.where;
-      el.style.transitionDelay = `${delay}ms`;
+      el.style.setProperty('--wait', `${delay}ms`);
       el.style.transform =
         `translate(${p.x - geo.cw / 2}px, ${p.y - geo.ch / 2}px) rotate(${p.rot}deg) scale(${p.scale})`;
       el.style.zIndex = String(p.z);
