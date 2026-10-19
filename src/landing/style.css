@@ -401,6 +401,14 @@ section {
   transform: translateX(6px);
 }
 
+/* A hall with more than one exhibit to enter: the links side by side, wrapping when narrow. */
+.gos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 14px;
+  margin: 0;
+}
+
 /* ---------------------------------------------------------------------- foot */
 
 .foot {

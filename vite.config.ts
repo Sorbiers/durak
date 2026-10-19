@@ -1,19 +1,25 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
-import { COFFEE, DREAM, GAME, LANDING, LANGS, PAGES, SITE, type PageLang, otherLangs } from './src/seo';
+import { KSTRINGS } from './src/kozel/i18n';
+import { COFFEE, DREAM, GAME, KOZEL, KOZEL_PAGES, LANDING, LANGS, PAGES, SITE, type PageLang, otherLangs } from './src/seo';
 import { STRINGS } from './src/ui/i18n';
 
-// The site has two parts, each a single page: the front page at the root and the game in
-// durak/. Each part is written out at four addresses: its own folder, which picks the
+// The site has three parts, each a single page: the front page at the root and the games in
+// durak/ and kozel/. Each part is written out at four addresses: its own folder, which picks the
 // language from the browser, and ru/, en/ and fr/ inside it, one language each. Search
 // engines list a page by what its HTML says before any script runs, so every address gets
 // its own title, description and texts, and names the others as its translations.
-type Part = 'landing' | 'durak';
+type Part = 'landing' | 'durak' | 'kozel';
 type Variant = 'root' | PageLang;
 const PARTS: Record<Part, { file: string; url: string }> = {
   landing: { file: 'index.html', url: SITE },
   durak: { file: 'durak/index.html', url: GAME },
+  kozel: { file: 'kozel/index.html', url: KOZEL },
 };
+const isGame = (part: Part): boolean => part !== 'landing';
+/** A game's own words: its title and what its page is built with. */
+const gameText = (part: Part, lang: PageLang) => (part === 'kozel' ? KSTRINGS[lang] : STRINGS[lang]);
+const pageText = (part: Part, lang: PageLang) => (part === 'kozel' ? KOZEL_PAGES[lang] : PAGES[lang]);
 const LOCALE: Record<PageLang, string> = { ru: 'ru_RU', en: 'en_US', fr: 'fr_FR' };
 const MUSEUM = 'SynArteum';
 
@@ -23,22 +29,23 @@ const esc = (s: string): string =>
 
 function head(part: Part, v: Variant): string {
   const lang: PageLang = v === 'root' ? 'en' : v;
-  const { title, description } = part === 'durak' ? PAGES[lang] : LANDING[lang];
+  const { title, description } = isGame(part) ? pageText(part, lang) : LANDING[lang];
   const image = `${PARTS[part].url}og-${lang}.jpg`;
   const museum = { '@type': 'WebSite', name: MUSEUM, url: SITE };
   const data =
-    part === 'durak'
+    isGame(part)
       ? {
           '@context': 'https://schema.org',
           '@type': ['VideoGame', 'WebApplication'],
-          name: STRINGS[lang].title,
-          alternateName: otherLangs(lang).map((l) => STRINGS[l].title),
+          name: gameText(part, lang).title,
+          alternateName: otherLangs(lang).map((l) => gameText(part, l).title),
           url: urlOf(part, v),
           description,
           image,
           inLanguage: LANGS,
           genre: 'Card game',
           playMode: 'SinglePlayer',
+          numberOfPlayers: part === 'kozel' ? '4' : '2-4',
           applicationCategory: 'GameApplication',
           operatingSystem: 'Any',
           offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
@@ -61,7 +68,7 @@ function head(part: Part, v: Variant): string {
     `<link rel="icon" href="./favicon.ico" sizes="32x32" />`,
     `<link rel="icon" href="./favicon.svg" type="image/svg+xml" />`,
     `<link rel="apple-touch-icon" href="./apple-touch-icon.png" />`,
-    `<meta name="theme-color" content="${part === 'durak' ? '#1d4a39' : '#05060b'}" />`,
+    `<meta name="theme-color" content="${isGame(part) ? '#1d4a39' : '#05060b'}" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:site_name" content="${MUSEUM}" />`,
     `<meta property="og:title" content="${esc(title)}" />`,
@@ -82,10 +89,10 @@ function head(part: Part, v: Variant): string {
 function localize(html: string, part: Part, v: Variant): string {
   const lang: PageLang = v === 'root' ? 'en' : v;
   // The slots of the page: [[name]] in its HTML is replaced by the text of that name.
-  const slots: Record<string, string> =
-    part === 'durak'
-      ? { brand: STRINGS[lang].title, about: STRINGS[lang].about, close: STRINGS[lang].close }
-      : { ...LANDING[lang], dream: DREAM, coffee: COFFEE, langdir: v === 'root' ? '' : `${v}/` };
+  const words = gameText(part, lang);
+  const slots: Record<string, string> = isGame(part)
+    ? { brand: words.title, about: words.about, close: words.close }
+    : { ...LANDING[lang], dream: DREAM, coffee: COFFEE, langdir: v === 'root' ? '' : `${v}/` };
   // The language switch: a link to the page in each of the other languages.
   const switchTo = (cls: string): string =>
     otherLangs(lang)
@@ -94,7 +101,7 @@ function localize(html: string, part: Part, v: Variant): string {
   const out = html
     .replace(/<html lang="[^"]*"/, `<html lang="${lang}"`)
     .replace('<!--seo-head-->', () => head(part, v))
-    .replace('<!--seo-about-->', () => PAGES[lang].about.trim())
+    .replace('<!--seo-about-->', () => pageText(part, lang).about.trim())
     .replace(/<!--langs:(\w+)-->/, (_, cls: string) => switchTo(cls))
     .replace(/\[\[(\w+)\]\]/g, (whole, name: string) => (name in slots ? esc(slots[name]) : whole));
   // A language page sits one folder further down, so its relative links climb one more.
@@ -120,7 +127,7 @@ function sitemap(): string {
   );
 }
 
-const LANG_PAGE = /^\/(durak\/)?(ru|en|fr)\/(?:index\.html)?(?:\?.*)?$/;
+const LANG_PAGE = /^\/((?:durak|kozel)\/)?(ru|en|fr)\/(?:index\.html)?(?:\?.*)?$/;
 
 function pages(): Plugin {
   return {
@@ -139,7 +146,8 @@ function pages(): Plugin {
       order: 'pre',
       handler(html, ctx) {
         if (!ctx.server) return html;
-        const part: Part = ctx.filename.replace(/\\/g, '/').endsWith('/durak/index.html') ? 'durak' : 'landing';
+        const file = ctx.filename.replace(/\\/g, '/');
+        const part: Part = file.endsWith('/durak/index.html') ? 'durak' : file.endsWith('/kozel/index.html') ? 'kozel' : 'landing';
         const m = (ctx.originalUrl ?? '').match(LANG_PAGE);
         return localize(html, part, m ? (m[2] as PageLang) : 'root');
       },
@@ -167,5 +175,9 @@ const at = (path: string): string => fileURLToPath(new URL(path, import.meta.url
 export default defineConfig({
   base: './',
   plugins: [pages()],
-  build: { rollupOptions: { input: { index: at('./index.html'), durak: at('./durak/index.html') } } },
+  build: {
+    rollupOptions: {
+      input: { index: at('./index.html'), durak: at('./durak/index.html'), kozel: at('./kozel/index.html') },
+    },
+  },
 });

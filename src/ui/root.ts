@@ -12,8 +12,15 @@ const match = page?.pathname.match(/\/(ru|en|fr)\/(?:index\.html)?$/) ?? null;
 /** The language of the page's address, if it has one. */
 export const PAGE_LANG: PageLang | undefined = match ? (match[1] as PageLang) : undefined;
 
-/** The address of this part's own folder, where its pictures and sounds live. */
+/** The address of this part's own folder. */
 export const ROOT: string = page ? new URL(match ? '../' : './', page.href).href : './';
+
+/**
+ * Where the pictures, cards and voices are. The games share one set, kept with Durak; another
+ * part names that folder, relative to its own, in its body's data-assets attribute.
+ */
+export const ASSETS: string =
+  page && typeof document !== 'undefined' ? new URL(document.body.dataset.assets ?? './', ROOT).href : './';
 
 /** The first of the browser's preferred languages that the site speaks; English failing both. */
 export function browserLang(): PageLang {

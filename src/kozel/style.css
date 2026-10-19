@@ -1,0 +1,14 @@
+/* What Kozel's table needs beyond Durak's. */
+
+/* The partner's plate and their badge in the roster carry the pair's colour. */
+.seat.partner {
+  box-shadow: inset 0 0 0 1px rgba(143, 208, 255, 0.45);
+}
+.pick.mate em {
+  background: #8fd0ff;
+}
+/* The tricks each pair has taken lie crosswise in the corners; their labels sit beside them. */
+#pile-us,
+#pile-them {
+  transform: translateX(-100%);
+}

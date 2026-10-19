@@ -1,6 +1,6 @@
 import { Rating } from '../ai';
 import { Lang } from './i18n';
-import { ROOT } from './root';
+import { ASSETS } from './root';
 
 export type Mood =
   | 'neutral'
@@ -112,11 +112,11 @@ export const characterById = (id: string): Character =>
   CHARACTERS.find((c) => c.id === id) ?? CHARACTERS[0];
 
 export const avatarUrl = (c: Character, mood: Mood): string =>
-  `${ROOT}avatars/${c.id}/${c.moods[mood]}.webp`;
+  `${ASSETS}avatars/${c.id}/${c.moods[mood]}.webp`;
 
 /** Fetches a character's pictures ahead of time so a change of mood does not flicker. */
 export function preloadAvatars(c: Character): void {
   for (const index of new Set(Object.values(c.moods))) {
-    new Image().src = `${ROOT}avatars/${c.id}/${index}.webp`;
+    new Image().src = `${ASSETS}avatars/${c.id}/${index}.webp`;
   }
 }

@@ -4,8 +4,9 @@
 // same texts when the language is switched.
 
 export const SITE = 'https://synarteum.com/';
-/** The game's folder on the site. */
+/** The games' folders on the site. */
 export const GAME = `${SITE}durak/`;
+export const KOZEL = `${SITE}kozel/`;
 export const REPO = 'https://github.com/Sorbiers/durak';
 
 export type PageLang = 'ru' | 'en' | 'fr';
@@ -75,7 +76,7 @@ export const PAGES: Record<PageLang, PageText> = {
 </ul>
 
 <p class="fine">Игра — один из залов <a href="${SITE}ru/">SynArteum</a>, музея синтетического
-искусства. Исходный код открыт, лицензия MIT:
+искусства. Сыграйте и в <a href="${KOZEL}ru/">козла</a>. Исходный код открыт, лицензия MIT:
 <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
   },
   en: {
@@ -128,7 +129,7 @@ defender's last card, there is no fool: it is a draw.</li>
 </ul>
 
 <p class="fine">The game is one of the halls of <a href="${SITE}en/">SynArteum</a>, a museum of
-synthetic art. The source is open under the MIT licence:
+synthetic art. Try <a href="${KOZEL}en/">Kozel</a> too. The source is open under the MIT licence:
 <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
   },
   fr: {
@@ -183,12 +184,12 @@ dernière carte du défenseur, il n’y a pas de dourak : partie nulle.</li>
 </ul>
 
 <p class="fine">Le jeu est l’une des salles de <a href="${SITE}fr/">SynArteum</a>, un musée d’art
-synthétique. Le code source est ouvert, sous licence MIT :
+synthétique. Essayez aussi le <a href="${KOZEL}fr/">kozel</a>. Le code source est ouvert, sous licence MIT :
 <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
   },
 };
 
-/** Where the front page's halls lead. The first is the game, on this site. */
+/** Where the front page's halls lead, besides the games on this site. */
 export const DREAM = 'https://wishmedream.com/';
 export const COFFEE = 'https://wishmecoffee.com/';
 
@@ -200,17 +201,18 @@ export const LANDING: Record<PageLang, Record<string, string>> = {
   ru: {
     title: 'SynArteum — музей синтетического искусства',
     description:
-      'SynArteum — музей синтетического искусства. Три зала: карточная игра «Дурак» с сильным и ' +
-      'честным компьютером, галерея снов Wish Me A Dream и кафе Wish Me Coffee.',
+      'SynArteum — музей синтетического искусства. Три зала: галерея снов Wish Me A Dream, кафе ' +
+      'Wish Me Coffee и карточные игры «Дурак» и «Козёл» с сильным и честным компьютером.',
     museum: 'Музей синтетического искусства',
-    lead: 'Три зала, где нейросети играют в карты, видят сны и варят кофе.',
+    lead: 'Три зала, где нейросети видят сны, варят кофе и играют в карты.',
     hall: 'Зал',
     exhibit: 'Экспонат',
     neurons: 'нейронов',
-    k1: 'Синтетическая карточная игра',
-    n1: 'Дурак',
-    t1: 'Подкидной и переводной против соперников, которые считают карты, но не подглядывают. Пять уровней силы, девять характеров.',
-    c1: 'Сесть за стол',
+    k1: 'Синтетические игры',
+    n1: 'Чилаут',
+    t1: 'Две русские карточные классики — «Дурак» и «Козёл» — против соперников, которые считают карты, но не подглядывают. Пять уровней силы, девять характеров.',
+    c1: 'Играть в дурака',
+    c1b: 'Играть в козла',
     k2: 'Синтетическая галерея',
     n2: 'Wish Me A Dream',
     t2: 'Тихая лента видений, приснившихся нейросети: сюрреалистическое барокко, по одной картине за раз.',
@@ -224,17 +226,18 @@ export const LANDING: Record<PageLang, Record<string, string>> = {
   en: {
     title: 'SynArteum — a museum of synthetic art',
     description:
-      'SynArteum is a museum of synthetic art with three halls: the card game Durak against a ' +
-      'strong, fair computer, the dream gallery Wish Me A Dream and the café Wish Me Coffee.',
+      'SynArteum is a museum of synthetic art with three halls: the dream gallery Wish Me A Dream, ' +
+      'the café Wish Me Coffee and the Russian card games Durak and Kozel against a strong, fair computer.',
     museum: 'Synthetic art museum',
-    lead: 'Three halls where neural networks play cards, dream in pictures and pour coffee.',
+    lead: 'Three halls where neural networks dream in pictures, pour coffee and play cards.',
     hall: 'Hall',
     exhibit: 'Exhibit',
     neurons: 'neurons',
-    k1: 'Synthetic card game',
-    n1: 'Durak',
-    t1: 'The Russian classic against opponents who count cards but never peek. Five levels of strength, nine characters.',
-    c1: 'Take a seat',
+    k1: 'Synthetic games',
+    n1: 'Chillout',
+    t1: 'Two Russian card classics, Durak and Kozel, against opponents who count cards but never peek. Five levels of strength, nine characters.',
+    c1: 'Play Durak',
+    c1b: 'Play Kozel',
     k2: 'Synthetic art gallery',
     n2: 'Wish Me A Dream',
     t2: 'A quiet feed of visions dreamt by a neural network: surreal baroque art, one image at a time.',
@@ -248,17 +251,18 @@ export const LANDING: Record<PageLang, Record<string, string>> = {
   fr: {
     title: 'SynArteum — un musée d’art synthétique',
     description:
-      'SynArteum est un musée d’art synthétique en trois salles : le jeu de cartes Dourak contre un ' +
-      'ordinateur fort et loyal, la galerie de rêves Wish Me A Dream et le café Wish Me Coffee.',
+      'SynArteum est un musée d’art synthétique en trois salles : la galerie de rêves Wish Me A Dream, ' +
+      'le café Wish Me Coffee et les jeux de cartes russes Dourak et Kozel contre un ordinateur fort et loyal.',
     museum: 'Musée d’art synthétique',
-    lead: 'Trois salles où des réseaux de neurones jouent aux cartes, rêvent en images et servent le café.',
+    lead: 'Trois salles où des réseaux de neurones rêvent en images, servent le café et jouent aux cartes.',
     hall: 'Salle',
     exhibit: 'Pièce',
     neurons: 'neurones',
-    k1: 'Jeu de cartes synthétique',
-    n1: 'Dourak',
-    t1: 'Le classique russe contre des adversaires qui comptent les cartes mais ne trichent jamais. Cinq niveaux de force, neuf personnages.',
-    c1: 'Prendre place',
+    k1: 'Jeux synthétiques',
+    n1: 'Chillout',
+    t1: 'Deux classiques russes, Dourak et Kozel, contre des adversaires qui comptent les cartes mais ne trichent jamais. Cinq niveaux de force, neuf personnages.',
+    c1: 'Jouer au dourak',
+    c1b: 'Jouer au kozel',
     k2: 'Galerie d’art synthétique',
     n2: 'Wish Me A Dream',
     t2: 'Un fil paisible de visions rêvées par un réseau de neurones : un baroque surréaliste, une image à la fois.',
@@ -268,5 +272,143 @@ export const LANDING: Record<PageLang, Record<string, string>> = {
     t3: 'Une tasse de café illustrée et un vœu sincère, selon l’heure de votre journée. Sur Telegram et dans le navigateur.',
     c3: 'Commander une tasse',
     foot: 'Fait par un humain et des réseaux de neurones',
+  },
+};
+
+/** Kozel's page: its title, description and "About" text. */
+export const KOZEL_PAGES: Record<PageLang, PageText> = {
+  ru: {
+    title: 'Козёл онлайн — карточная игра пара на пару против компьютера',
+    description:
+      'Козёл онлайн бесплатно и без регистрации: игра вчетвером, пара на пару, 36 карт, взятки и ' +
+      'очки. Вы и партнёр против двух соперников; компьютер не видит ваши карты.',
+    about: `
+<h2>Козёл онлайн</h2>
+<p>«Козёл» — старая русская игра на взятки для двух пар. Партнёры сидят друг напротив друга и
+вместе набирают очки во взятках; пара, проигравшая раздачи до двенадцати очков, становится
+козлами. Здесь вы играете в паре с компьютерным партнёром против двух компьютерных соперников —
+бесплатно, в браузере, без регистрации и рекламы.</p>
+
+<h3>Правила</h3>
+<ul>
+<li>Колода 36 карт, каждому по четыре. Следующая карта открывается и показывает козырь; она
+ложится под колоду и достаётся последней.</li>
+<li>Порядок карт в масти: туз, десятка, король, дама, валет, девятка, восьмёрка, семёрка,
+шестёрка. Очки: туз 11, десятка 10, король 4, дама 3, валет 2, остальные 0; всего 120.</li>
+<li>Ходят одной картой или несколькими одной масти. Каждый следующий кладёт столько же карт —
+любых. Если его карты бьют лучший заход (каждая карта бита своей: старшей той же масти или
+козырем), он кладёт их в открытую и перебивает; если нет — кладёт в закрытую. Бить не
+обязательно.</li>
+<li>Взятку забирает тот, чей заход лучший, и ходит следующим. После взятки все добирают до
+четырёх, начиная со взявшего, — пока хватает колоды, всем поровну.</li>
+<li>После раздачи пара, набравшая меньше очков, получает штраф: 2, если у неё 31 очко и больше;
+4, если меньше; 6, если она не взяла ни одной взятки. При 60 на 60 («яйца») штрафа нет.</li>
+<li>Пара, набравшая 12 штрафных очков, — козлы. Сдаёт каждый по очереди.</li>
+</ul>
+<p>У «Козла» много местных вариантов: со «шамой», с постоянными козырями, с объявлениями.
+Здесь — простой вариант с добором из колоды.</p>
+
+<h3>Что есть в игре</h3>
+<ul>
+<li>Те же девять персонажей, что и в «Дураке», с пятью уровнями силы, портретами, репликами и
+озвучкой.</li>
+<li>Честный компьютер: он видит только свои карты и то, что сыграно в открытую. Сильные игроки
+просчитывают раздачу вперёд.</li>
+<li>Подсказка хода и игра в открытую — для тренировки.</li>
+</ul>
+
+<p class="fine">Игра — один из залов <a href="${SITE}ru/">SynArteum</a>, музея синтетического
+искусства. Сыграйте и в <a href="${GAME}ru/">дурака</a>. Исходный код открыт, лицензия MIT:
+<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
+  },
+  en: {
+    title: 'Kozel online — the Russian card game for two pairs, against the computer',
+    description:
+      'Play Kozel ("the goat"), the Russian trick-taking card game for two pairs, free in your ' +
+      'browser. You and a computer partner against two computer opponents; 36 cards, tricks and points.',
+    about: `
+<h2>Kozel online</h2>
+<p>Kozel (“the goat”) is an old Russian trick-taking game for two pairs. Partners sit opposite
+each other and score points in the tricks they take together; the pair that loses deals up to
+twelve penalty points are the goats. Here you play with a computer partner against two computer
+opponents, free in the browser, with no sign-up and no ads.</p>
+
+<h3>Rules</h3>
+<ul>
+<li>A 36-card deck, four cards each. The next card is turned up for trumps; it goes under the
+deck and is drawn last.</li>
+<li>Order within a suit: ace, ten, king, queen, jack, nine, eight, seven, six. Points: ace 11,
+ten 10, king 4, queen 3, jack 2, the rest nothing; 120 in all.</li>
+<li>A lead is one card, or several of one suit. Each player in turn plays as many cards, of any
+suits. If they beat the best play so far, each card beaten by a different one, a higher card of
+its suit or a trump, they go down face up and take over the trick; otherwise they go down face
+down. Nobody has to beat.</li>
+<li>The best play takes the trick and leads next. After each trick everyone draws back up to
+four, the winner first, as far as the deck goes with everyone getting the same number.</li>
+<li>After the deal the pair with fewer points is charged: 2 if they took 31 or more, 4 if less,
+6 if they took no trick. At 60 all (“eggs”) nobody is charged.</li>
+<li>A pair charged 12 in all are the goats. The deal passes round the table.</li>
+</ul>
+<p>Kozel has many local variants, with permanent trumps, special cards or declarations. This is
+the plain version with drawing from the deck.</p>
+
+<h3>What is in the game</h3>
+<ul>
+<li>The same nine characters as in Durak, with five levels of strength, portraits, table talk
+and Russian voice lines.</li>
+<li>A fair computer: it sees only its own cards and what has been played face up. The strong
+players look ahead through the deal.</li>
+<li>A hint for the move and open cards, for training.</li>
+</ul>
+
+<p class="fine">The game is one of the halls of <a href="${SITE}en/">SynArteum</a>, a museum of
+synthetic art. Try <a href="${GAME}en/">Durak</a> too. The source code is open, under the MIT
+licence: <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
+  },
+  fr: {
+    title: 'Kozel en ligne — le jeu de cartes russe à deux contre deux',
+    description:
+      'Jouez au Kozel (« le bouc »), le jeu de levées russe à deux contre deux, gratuitement dans ' +
+      'votre navigateur. Vous et un partenaire artificiel contre deux adversaires ; 36 cartes, plis et points.',
+    about: `
+<h2>Kozel en ligne</h2>
+<p>Le Kozel (« le bouc ») est un vieux jeu de levées russe pour deux équipes de deux. Les
+partenaires sont assis face à face et marquent ensemble les points des plis qu’ils prennent ;
+l’équipe qui perd les donnes jusqu’à douze points de pénalité devient « les boucs ». Ici, vous
+jouez avec un partenaire artificiel contre deux adversaires artificiels, gratuitement dans le
+navigateur, sans inscription ni publicité.</p>
+
+<h3>Règles</h3>
+<ul>
+<li>Un jeu de 36 cartes, quatre cartes chacun. La carte suivante est retournée pour l’atout ;
+elle va sous le talon et sera piochée en dernier.</li>
+<li>Ordre dans une couleur : as, dix, roi, dame, valet, neuf, huit, sept, six. Points : as 11,
+dix 10, roi 4, dame 3, valet 2, les autres rien ; 120 en tout.</li>
+<li>On entame avec une carte, ou plusieurs de la même couleur. Chacun à son tour pose autant de
+cartes, de n’importe quelles couleurs. Si elles battent la meilleure mise, chaque carte par une
+autre, plus forte de sa couleur ou atout, elles sont posées face visible et prennent la main ;
+sinon elles sont posées face cachée. Personne n’est obligé de battre.</li>
+<li>La meilleure mise prend le pli et entame le suivant. Après chaque pli, chacun complète sa
+main à quatre, le preneur d’abord, tant que le talon le permet, tous autant.</li>
+<li>Après la donne, l’équipe qui a le moins de points est pénalisée : 2 si elle a 31 points ou
+plus, 4 sinon, 6 si elle n’a pris aucun pli. À 60 partout (« les œufs »), personne n’est
+pénalisé.</li>
+<li>L’équipe qui atteint 12 points de pénalité devient « les boucs ». La donne tourne.</li>
+</ul>
+<p>Le Kozel a de nombreuses variantes locales, avec atouts permanents, cartes spéciales ou
+annonces. Voici la version simple, avec pioche dans le talon.</p>
+
+<h3>Ce que contient le jeu</h3>
+<ul>
+<li>Les neuf personnages du Dourak, avec cinq niveaux de force, portraits, remarques et voix
+russes.</li>
+<li>Un ordinateur loyal : il ne voit que ses propres cartes et ce qui est joué face visible.
+Les joueurs forts calculent la donne à l’avance.</li>
+<li>Un conseil pour le coup et le jeu à cartes ouvertes, pour s’entraîner.</li>
+</ul>
+
+<p class="fine">Le jeu est l’une des salles de <a href="${SITE}fr/">SynArteum</a>, un musée d’art
+synthétique. Essayez aussi le <a href="${GAME}fr/">dourak</a>. Le code source est ouvert, sous
+licence MIT : <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
   },
 };

@@ -27,39 +27,25 @@
           <p class="lead" data-t="lead">[[lead]]</p>
         </div>
         <ol class="index">
-          <li class="tone-1">
-            <a href="#hall-1"><i>I</i><span data-t="n1">[[n1]]</span><small data-t="k1">[[k1]]</small></a>
-          </li>
           <li class="tone-2">
-            <a href="#hall-2"><i>II</i><span data-t="n2">[[n2]]</span><small data-t="k2">[[k2]]</small></a>
+            <a href="#hall-1"><i>I</i><span data-t="n2">[[n2]]</span><small data-t="k2">[[k2]]</small></a>
           </li>
           <li class="tone-3">
-            <a href="#hall-3"><i>III</i><span data-t="n3">[[n3]]</span><small data-t="k3">[[k3]]</small></a>
+            <a href="#hall-2"><i>II</i><span data-t="n3">[[n3]]</span><small data-t="k3">[[k3]]</small></a>
+          </li>
+          <li class="tone-1">
+            <a href="#hall-3"><i>III</i><span data-t="n1">[[n1]]</span><small data-t="k1">[[k1]]</small></a>
           </li>
         </ol>
       </section>
 
-      <section class="hall tone-1" id="hall-1" data-no="I" data-emblem="spade">
-        <a class="frame" href="./durak/[[langdir]]" tabindex="-1" aria-hidden="true">
+      <section class="hall tone-2" id="hall-1" data-no="I" data-emblem="eye">
+        <a class="frame" href="[[dream]]" tabindex="-1" aria-hidden="true">
           <canvas></canvas>
           <span class="cap"><span data-t="exhibit">[[exhibit]]</span> 001 · <b></b> <span data-t="neurons">[[neurons]]</span></span>
         </a>
         <div class="plate">
           <p class="no"><span data-t="hall">[[hall]]</span> I <em>01 / 03</em></p>
-          <p class="kind" data-t="k1">[[k1]]</p>
-          <h2 data-t="n1">[[n1]]</h2>
-          <p class="text" data-t="t1">[[t1]]</p>
-          <a class="go" href="./durak/[[langdir]]"><span data-t="c1">[[c1]]</span></a>
-        </div>
-      </section>
-
-      <section class="hall flip tone-2" id="hall-2" data-no="II" data-emblem="eye">
-        <a class="frame" href="[[dream]]" tabindex="-1" aria-hidden="true">
-          <canvas></canvas>
-          <span class="cap"><span data-t="exhibit">[[exhibit]]</span> 002 · <b></b> <span data-t="neurons">[[neurons]]</span></span>
-        </a>
-        <div class="plate">
-          <p class="no"><span data-t="hall">[[hall]]</span> II <em>02 / 03</em></p>
           <p class="kind" data-t="k2">[[k2]]</p>
           <h2 data-t="n2">[[n2]]</h2>
           <p class="text" data-t="t2">[[t2]]</p>
@@ -67,17 +53,34 @@
         </div>
       </section>
 
-      <section class="hall tone-3" id="hall-3" data-no="III" data-emblem="cup">
+      <section class="hall flip tone-3" id="hall-2" data-no="II" data-emblem="cup">
         <a class="frame" href="[[coffee]]" tabindex="-1" aria-hidden="true">
+          <canvas></canvas>
+          <span class="cap"><span data-t="exhibit">[[exhibit]]</span> 002 · <b></b> <span data-t="neurons">[[neurons]]</span></span>
+        </a>
+        <div class="plate">
+          <p class="no"><span data-t="hall">[[hall]]</span> II <em>02 / 03</em></p>
+          <p class="kind" data-t="k3">[[k3]]</p>
+          <h2 data-t="n3">[[n3]]</h2>
+          <p class="text" data-t="t3">[[t3]]</p>
+          <a class="go" href="[[coffee]]" rel="noopener"><span data-t="c3">[[c3]]</span></a>
+        </div>
+      </section>
+
+      <section class="hall tone-1" id="hall-3" data-no="III" data-emblem="spade">
+        <a class="frame" href="./durak/[[langdir]]" tabindex="-1" aria-hidden="true">
           <canvas></canvas>
           <span class="cap"><span data-t="exhibit">[[exhibit]]</span> 003 · <b></b> <span data-t="neurons">[[neurons]]</span></span>
         </a>
         <div class="plate">
           <p class="no"><span data-t="hall">[[hall]]</span> III <em>03 / 03</em></p>
-          <p class="kind" data-t="k3">[[k3]]</p>
-          <h2 data-t="n3">[[n3]]</h2>
-          <p class="text" data-t="t3">[[t3]]</p>
-          <a class="go" href="[[coffee]]" rel="noopener"><span data-t="c3">[[c3]]</span></a>
+          <p class="kind" data-t="k1">[[k1]]</p>
+          <h2 data-t="n1">[[n1]]</h2>
+          <p class="text" data-t="t1">[[t1]]</p>
+          <p class="gos">
+            <a class="go" href="./durak/[[langdir]]"><span data-t="c1">[[c1]]</span></a>
+            <a class="go" href="./kozel/[[langdir]]"><span data-t="c1b">[[c1b]]</span></a>
+          </p>
         </div>
       </section>
     </main>

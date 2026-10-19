@@ -18,7 +18,18 @@ export type Remark =
   | 'waiting' // the human has been thinking for a long time
   | 'out' // got rid of every card
   | 'fool' // lost
-  | 'youFool'; // the human lost
+  | 'youFool' // the human lost
+  // Козёл
+  | 'kTrick' // takes a trick
+  | 'kRich' // takes a trick full of points
+  | 'kBeat' // beats the best play so far
+  | 'kSlip' // plays face down
+  | 'kPartner' // the partner took a good trick
+  | 'kDealWon' // their pair won the deal
+  | 'kDealLost' // their pair lost the deal
+  | 'kEggs' // sixty all
+  | 'kGoats' // the other pair are the goats
+  | 'kWeGoats'; // their own pair are the goats
 
 /** How likely a remark is to be made when its moment comes. The rest are always made. */
 export const REMARK_CHANCE: Partial<Record<Remark, number>> = {
@@ -29,6 +40,11 @@ export const REMARK_CHANCE: Partial<Record<Remark, number>> = {
   gotTransfer: 0.7,
   theyTake: 0.65,
   deckOut: 0.7,
+  kTrick: 0.3,
+  kRich: 0.7,
+  kBeat: 0.25,
+  kSlip: 0.12,
+  kPartner: 0.6,
 };
 
 type Lines = Partial<Record<Remark, string[]>>;
@@ -959,6 +975,101 @@ const MORE: Record<string, Partial<Record<Lang, Lines>>> = {
     },
   },
 };
+
+// Lines for Козёл: shared by everyone, then a few of each character's own.
+const KOZEL_COMMON: Record<Lang, Lines> = {
+  ru: {
+    kTrick: ['Моя.', 'Забираю.', 'Взятка наша.'],
+    kRich: ['Хорошая взятка!', 'Вот это улов.', 'С очками!'],
+    kBeat: ['Бью.', 'Перебиваю.', 'А вот так.'],
+    kSlip: ['Пас.', 'Не моё.', 'Скидываю.'],
+    kPartner: ['Молодец, партнёр!', 'Так держать!', 'Вот это по-нашему.'],
+    kDealWon: ['Раздача наша.', 'Так и надо.', 'Неплохо сыграли.'],
+    kDealLost: ['Эту отдали.', 'Ничего, отыграемся.', 'Не наша раздача.'],
+    kEggs: ['Яйца! Поровну.', 'Шестьдесят на шестьдесят.'],
+    kGoats: ['Ну что, козлы?', 'Ме-е-е!', 'Козлы, однако.'],
+    kWeGoats: ['Ме-е… Мы козлы.', 'Обидно быть козлом.', 'Реванш!'],
+  },
+  en: {
+    kTrick: ['Mine.', "I'll take that.", 'Our trick.'],
+    kRich: ['A fat trick!', 'Nice haul.', 'Full of points!'],
+    kBeat: ['Beaten.', 'Over that.', 'Like this.'],
+    kSlip: ['Pass.', 'Not mine.', 'Throwing away.'],
+    kPartner: ['Well played, partner!', 'Keep it up!', "That's our game."],
+    kDealWon: ['That deal is ours.', "That's how it's done.", 'Nicely played.'],
+    kDealLost: ['We gave that one away.', "Never mind, we'll win it back.", 'Not our deal.'],
+    kEggs: ['Eggs! Sixty all.', 'Sixty-sixty.'],
+    kGoats: ['Well, goats?', 'Baa-a!', 'Goats, it seems.'],
+    kWeGoats: ["Baa… we're the goats.", 'It hurts to be a goat.', 'Rematch!'],
+  },
+  fr: {
+    kTrick: ['À moi.', 'Je prends.', 'Le pli est à nous.'],
+    kRich: ['Un beau pli !', 'Belle prise.', 'Plein de points !'],
+    kBeat: ['Je bats.', 'Par-dessus.', 'Comme ça.'],
+    kSlip: ['Je passe.', 'Pas pour moi.', 'Je me défausse.'],
+    kPartner: ['Bien joué, partenaire !', 'Continue comme ça !', 'Voilà notre jeu.'],
+    kDealWon: ['Cette donne est à nous.', 'Voilà comment on fait.', 'Bien joué.'],
+    kDealLost: ['On a perdu celle-là.', 'Ce n’est rien, on se rattrapera.', 'Pas notre donne.'],
+    kEggs: ['Les œufs ! Soixante partout.', 'Soixante-soixante.'],
+    kGoats: ['Alors, les boucs ?', 'Bê-ê-ê !', 'Des boucs, apparemment.'],
+    kWeGoats: ['Bê-ê… les boucs, c’est nous.', 'Pas drôle d’être le bouc.', 'Revanche !'],
+  },
+};
+
+const KOZEL_OWN: Record<string, Partial<Record<Lang, Lines>>> = {
+  boris: {
+    ru: { kRich: ['Очки посчитаны.'], kDealWon: ['Расчёт оправдался.'], kDealLost: ['Карта не легла. Бывает.'], kGoats: ['Арифметика неумолима.'], kWeGoats: ['Ошибка в расчётах.'] },
+    en: { kRich: ['Points counted.'], kDealWon: ['The calculation held.'], kDealLost: ['The cards did not fall. It happens.'], kGoats: ['Arithmetic is merciless.'], kWeGoats: ['A miscalculation.'] },
+    fr: { kRich: ['Points comptés.'], kDealWon: ['Le calcul a tenu.'], kDealLost: ['Les cartes ne sont pas venues. Ça arrive.'], kGoats: ['L’arithmétique est impitoyable.'], kWeGoats: ['Une erreur de calcul.'] },
+  },
+  vera: {
+    ru: { kRich: ['Какая прелесть.'], kDealWon: ['Мы с вами чудесная пара.'], kDealLost: ['Ну что ж, в следующий раз.'], kGoats: ['Не обижайтесь, козлики.'], kWeGoats: ['Какая досада.'] },
+    en: { kRich: ['How lovely.'], kDealWon: ['We make a wonderful pair.'], kDealLost: ['Well, next time.'], kGoats: ["Don't take it badly, little goats."], kWeGoats: ['How annoying.'] },
+    fr: { kRich: ['Comme c’est charmant.'], kDealWon: ['Nous faisons une belle paire.'], kDealLost: ['Eh bien, la prochaine fois.'], kGoats: ['Ne le prenez pas mal, mes petits boucs.'], kWeGoats: ['Quel dommage.'] },
+  },
+  gleb: {
+    ru: { kRich: ['Курочка по зёрнышку!'], kDealWon: ['Один за всех и все за одного!'], kDealLost: ['Не всё коту масленица!'], kGoats: ['Пустили козла в огород!'], kWeGoats: ['Как с гуся вода!'] },
+    en: { kRich: ['Every little helps!'], kDealWon: ['All for one and one for all!'], kDealLost: ['You win some, you lose some!'], kGoats: ['The goat is in the garden now!'], kWeGoats: ["Water off a duck's back!"] },
+    fr: { kRich: ['Petit à petit, l’oiseau fait son nid !'], kDealWon: ['Un pour tous, tous pour un !'], kDealLost: ['On ne peut pas gagner à tous les coups !'], kGoats: ['Le bouc est dans le jardin !'], kWeGoats: ['Ça glisse comme l’eau sur les plumes d’un canard !'] },
+  },
+  lev: {
+    ru: { kRich: ['В наше время так и брали.'], kDealWon: ['Старая гвардия.'], kDealLost: ['Молодёжь нынче шустрая.'], kGoats: ['Ничего, я тоже когда-то козлом бывал.'], kWeGoats: ['Эх, на старости лет — и в козлы.'] },
+    en: { kRich: ["That's how we took them in my day."], kDealWon: ['The old guard.'], kDealLost: ['Young people are quick these days.'], kGoats: ['Never mind, I was a goat once too.'], kWeGoats: ['Ah, a goat in my old age.'] },
+    fr: { kRich: ['De mon temps, on les prenait comme ça.'], kDealWon: ['La vieille garde.'], kDealLost: ['Les jeunes sont rapides de nos jours.'], kGoats: ['Ce n’est rien, j’ai été bouc moi aussi.'], kWeGoats: ['Ah, bouc sur mes vieux jours.'] },
+  },
+  tamara: {
+    ru: { kRich: ['Пять баллов.'], kDealWon: ['Работа выполнена.'], kDealLost: ['Будем исправлять.'], kGoats: ['Козлы. Садитесь.'], kWeGoats: ['Это недоразумение.'] },
+    en: { kRich: ['Full marks.'], kDealWon: ['Work done.'], kDealLost: ['We shall put it right.'], kGoats: ['Goats. Sit down.'], kWeGoats: ['This is a misunderstanding.'] },
+    fr: { kRich: ['Vingt sur vingt.'], kDealWon: ['Travail accompli.'], kDealLost: ['Nous allons corriger cela.'], kGoats: ['Les boucs. Asseyez-vous.'], kWeGoats: ['C’est un malentendu.'] },
+  },
+  anton: {
+    ru: { kRich: ['Жирно!'], kDealWon: ['Командная работа.'], kDealLost: ['Ничего, догоним.'], kGoats: ['Козлы, гг.'], kWeGoats: ['Нечестно же!'] },
+    en: { kRich: ['Juicy!'], kDealWon: ['Teamwork.'], kDealLost: ["We'll catch up."], kGoats: ['Goats, gg.'], kWeGoats: ["That's not fair!"] },
+    fr: { kRich: ['Juteux !'], kDealWon: ['Travail d’équipe.'], kDealLost: ['On va les rattraper.'], kGoats: ['Les boucs, gg.'], kWeGoats: ['C’est pas juste !'] },
+  },
+  fyodor: {
+    ru: { kRich: ['Хоть что-то.'], kDealWon: ['Надо же, повезло.'], kDealLost: ['Как обычно.'], kGoats: ['Не всё ж мне.'], kWeGoats: ['Ну конечно. Козлы — это мы.'] },
+    en: { kRich: ['Better than nothing.'], kDealWon: ['Well, lucky for once.'], kDealLost: ['As usual.'], kGoats: ["It can't always be me."], kWeGoats: ["Of course. We're the goats."] },
+    fr: { kRich: ['C’est toujours ça.'], kDealWon: ['Tiens, de la chance pour une fois.'], kDealLost: ['Comme d’habitude.'], kGoats: ['Ça ne peut pas toujours être moi.'], kWeGoats: ['Évidemment. Les boucs, c’est nous.'] },
+  },
+  lyuba: {
+    ru: { kRich: ['Ой, сколько очков!'], kDealWon: ['Ура, мы молодцы!'], kDealLost: ['Ой, обидно!'], kGoats: ['Ой, козлики мои!'], kWeGoats: ['Ой, я козочка!'] },
+    en: { kRich: ['Oh, so many points!'], kDealWon: ["Hooray, we're brilliant!"], kDealLost: ['Oh, what a shame!'], kGoats: ['Oh, my little goats!'], kWeGoats: ["Oh, I'm a little goat!"] },
+    fr: { kRich: ['Oh, que de points !'], kDealWon: ['Hourra, on est géniaux !'], kDealLost: ['Oh, quel dommage !'], kGoats: ['Oh, mes petits boucs !'], kWeGoats: ['Oh, je suis une petite chèvre !'] },
+  },
+  kostya: {
+    ru: { kRich: ['Ого, это много?'], kDealWon: ['Мы выиграли? Круто!'], kDealLost: ['А что, мы проиграли?'], kGoats: ['А кто козлы? Они? Ура!'], kWeGoats: ['Мы козлы? Это плохо?'] },
+    en: { kRich: ['Whoa, is that a lot?'], kDealWon: ['We won? Cool!'], kDealLost: ['Wait, did we lose?'], kGoats: ['Who are the goats? Them? Hooray!'], kWeGoats: ["We're the goats? Is that bad?"] },
+    fr: { kRich: ['Ouah, c’est beaucoup ?'], kDealWon: ['On a gagné ? Trop bien !'], kDealLost: ['Attendez, on a perdu ?'], kGoats: ['C’est qui les boucs ? Eux ? Hourra !'], kWeGoats: ['C’est nous les boucs ? C’est grave ?'] },
+  },
+};
+
+for (const lang of Object.keys(KOZEL_COMMON) as Lang[]) Object.assign(COMMON[lang], KOZEL_COMMON[lang]);
+for (const [id, langs] of Object.entries(KOZEL_OWN)) {
+  for (const [lang, lines] of Object.entries(langs) as [Lang, Lines][]) {
+    Object.assign(((PERSONAL[id] ??= {})[lang] ??= {}), lines);
+  }
+}
 
 for (const [id, langs] of Object.entries(MORE)) {
   for (const [lang, lines] of Object.entries(langs) as [Lang, Lines][]) {
