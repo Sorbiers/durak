@@ -1,0 +1,77 @@
+/* What the poker table needs beyond Durak's. */
+
+/* The pot sits above the board, a little larger than the other labels. */
+#pot {
+  font-size: 13px;
+  padding: 3px 12px;
+}
+
+/* The dealer button: a white disc beside the dealer's cards. */
+#dealer {
+  position: absolute;
+  z-index: 360;
+  width: 26px;
+  height: 26px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--ivory);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 26px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  transition:
+    left 0.4s,
+    top 0.4s;
+}
+
+/* Chips in front of a player: a little stack and the amount. */
+.bet {
+  position: absolute;
+  z-index: 340;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px 2px 4px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--brass-bright);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.bet::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--cinnabar) 0 38%, var(--ivory) 40% 52%, var(--cinnabar) 54%);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.bet:empty {
+  display: none;
+}
+
+/* Choosing how much to bet: a slider and a few usual sizes. */
+.sizing {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto;
+}
+.sizing input[type='range'] {
+  width: 140px;
+  accent-color: var(--brass);
+}
+#buttons {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+@media (max-width: 760px) {
+  .sizing input[type='range'] {
+    width: 100px;
+  }
+}

@@ -7,6 +7,7 @@ export const SITE = 'https://synarteum.com/';
 /** The games' folders on the site. */
 export const GAME = `${SITE}durak/`;
 export const KOZEL = `${SITE}kozel/`;
+export const POKER = `${SITE}poker/`;
 export const REPO = 'https://github.com/Sorbiers/durak';
 
 export type PageLang = 'ru' | 'en' | 'fr';
@@ -202,7 +203,7 @@ export const LANDING: Record<PageLang, Record<string, string>> = {
     title: 'SynArteum — музей синтетического искусства',
     description:
       'SynArteum — музей синтетического искусства. Три зала: галерея снов Wish Me A Dream, кафе ' +
-      'Wish Me Coffee и карточные игры «Дурак» и «Козёл» с сильным и честным компьютером.',
+      'Wish Me Coffee и карточные игры — «Дурак», «Козёл» и покер — с сильным и честным компьютером.',
     museum: 'Музей синтетического искусства',
     lead: 'Три зала, где нейросети видят сны, варят кофе и играют в карты.',
     hall: 'Зал',
@@ -210,9 +211,10 @@ export const LANDING: Record<PageLang, Record<string, string>> = {
     neurons: 'нейронов',
     k1: 'Синтетические игры',
     n1: 'Чилаут',
-    t1: 'Две русские карточные классики — «Дурак» и «Козёл» — против соперников, которые считают карты, но не подглядывают. Пять уровней силы, девять характеров.',
+    t1: '«Дурак», «Козёл» и техасский холдем против соперников, которые считают карты, но не подглядывают. Пять уровней силы, девять характеров.',
     c1: 'Играть в дурака',
     c1b: 'Играть в козла',
+    c1c: 'Играть в покер',
     k2: 'Синтетическая галерея',
     n2: 'Wish Me A Dream',
     t2: 'Тихая лента видений, приснившихся нейросети: сюрреалистическое барокко, по одной картине за раз.',
@@ -227,7 +229,7 @@ export const LANDING: Record<PageLang, Record<string, string>> = {
     title: 'SynArteum — a museum of synthetic art',
     description:
       'SynArteum is a museum of synthetic art with three halls: the dream gallery Wish Me A Dream, ' +
-      'the café Wish Me Coffee and the Russian card games Durak and Kozel against a strong, fair computer.',
+      'the café Wish Me Coffee and the card games Durak, Kozel and Texas Hold’em against a strong, fair computer.',
     museum: 'Synthetic art museum',
     lead: 'Three halls where neural networks dream in pictures, pour coffee and play cards.',
     hall: 'Hall',
@@ -235,9 +237,10 @@ export const LANDING: Record<PageLang, Record<string, string>> = {
     neurons: 'neurons',
     k1: 'Synthetic games',
     n1: 'Chillout',
-    t1: 'Two Russian card classics, Durak and Kozel, against opponents who count cards but never peek. Five levels of strength, nine characters.',
+    t1: 'Durak, Kozel and Texas Hold’em against opponents who count cards but never peek. Five levels of strength, nine characters.',
     c1: 'Play Durak',
     c1b: 'Play Kozel',
+    c1c: 'Play poker',
     k2: 'Synthetic art gallery',
     n2: 'Wish Me A Dream',
     t2: 'A quiet feed of visions dreamt by a neural network: surreal baroque art, one image at a time.',
@@ -252,7 +255,7 @@ export const LANDING: Record<PageLang, Record<string, string>> = {
     title: 'SynArteum — un musée d’art synthétique',
     description:
       'SynArteum est un musée d’art synthétique en trois salles : la galerie de rêves Wish Me A Dream, ' +
-      'le café Wish Me Coffee et les jeux de cartes russes Dourak et Kozel contre un ordinateur fort et loyal.',
+      'le café Wish Me Coffee et les jeux de cartes Dourak, Kozel et Texas Hold’em contre un ordinateur fort et loyal.',
     museum: 'Musée d’art synthétique',
     lead: 'Trois salles où des réseaux de neurones rêvent en images, servent le café et jouent aux cartes.',
     hall: 'Salle',
@@ -260,9 +263,10 @@ export const LANDING: Record<PageLang, Record<string, string>> = {
     neurons: 'neurones',
     k1: 'Jeux synthétiques',
     n1: 'Chillout',
-    t1: 'Deux classiques russes, Dourak et Kozel, contre des adversaires qui comptent les cartes mais ne trichent jamais. Cinq niveaux de force, neuf personnages.',
+    t1: 'Dourak, Kozel et Texas Hold’em contre des adversaires qui comptent les cartes mais ne trichent jamais. Cinq niveaux de force, neuf personnages.',
     c1: 'Jouer au dourak',
     c1b: 'Jouer au kozel',
+    c1c: 'Jouer au poker',
     k2: 'Galerie d’art synthétique',
     n2: 'Wish Me A Dream',
     t2: 'Un fil paisible de visions rêvées par un réseau de neurones : un baroque surréaliste, une image à la fois.',
@@ -410,5 +414,136 @@ Les joueurs forts calculent la donne à l’avance.</li>
 <p class="fine">Le jeu est l’une des salles de <a href="${SITE}fr/">SynArteum</a>, un musée d’art
 synthétique. Essayez aussi le <a href="${GAME}fr/">dourak</a>. Le code source est ouvert, sous
 licence MIT : <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
+  },
+};
+
+/** The poker page: its title, description and "About" text. */
+export const POKER_PAGES: Record<PageLang, PageText> = {
+  ru: {
+    title: 'Покер онлайн — техасский холдем против компьютера, бесплатно',
+    description:
+      'Техасский холдем бесплатно и без регистрации: турнир на выбывание против 1–5 соперников, ' +
+      'безлимитные ставки, растущие блайнды. Честный компьютер не видит ваших карт.',
+    about: `
+<h2>Покер онлайн: техасский холдем</h2>
+<p>Техасский холдем — самый популярный вид покера. Здесь он сыгран как небольшой турнир:
+у всех поровну фишек, блайнды растут, проигравшие все фишки выбывают, побеждает тот, кто
+забрал всё. Играть можно бесплатно, в браузере, без регистрации и рекламы, против одного —
+пяти компьютерных соперников. Фишки ненастоящие, ставок на деньги нет.</p>
+
+<h3>Правила</h3>
+<ul>
+<li>Каждому сдают две закрытые карты. Двое слева от баттона ставят блайнды: малый и большой.</li>
+<li>Четыре круга торговли: до флопа, после флопа (три общие карты), тёрна (четвёртая) и
+ривера (пятая). Можно сбросить карты, уравнять (колл), пропустить (чек), поставить или
+повысить (рейз) — без ограничения суммы, вплоть до всех фишек (олл-ин).</li>
+<li>Если ставку не уравнял никто, банк забирает поставивший. Иначе на вскрытии выигрывает
+лучшая комбинация из пяти карт: своих двух и пяти общих.</li>
+<li>Комбинации по старшинству: стрит-флеш, каре, фулл-хаус, флеш, стрит, тройка, две пары,
+пара, старшая карта.</li>
+<li>Кто пошёл олл-ин, борется только за ту часть банка, которую мог покрыть; остальное
+разыгрывают другие (побочные банки).</li>
+<li>Блайнды растут каждые восемь раздач. Стартовый стек — 1000 фишек.</li>
+</ul>
+
+<h3>Что есть в игре</h3>
+<ul>
+<li>Те же девять персонажей, что в «Дураке» и «Козле», с пятью уровнями силы, портретами,
+репликами и озвучкой.</li>
+<li>Честный компьютер: он видит только свои две карты, стол и ставки. Сильные игроки
+просчитывают шансы и учитывают, что крупная ставка обычно что-то значит.</li>
+<li>Для тренировки — ваш шанс выиграть раздачу, подсказка хода и игра в открытую.</li>
+</ul>
+
+<p class="fine">Игра — один из залов <a href="${SITE}ru/">SynArteum</a>, музея синтетического
+искусства. Сыграйте и в <a href="${GAME}ru/">дурака</a> или <a href="${KOZEL}ru/">козла</a>.
+Исходный код открыт, лицензия MIT:
+<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
+  },
+  en: {
+    title: 'Texas Hold’em poker online — free, against the computer',
+    description:
+      'Play Texas Hold’em free in your browser: a sit-and-go tournament against one to five ' +
+      'computer opponents, no-limit betting, rising blinds. A fair computer that never sees your cards.',
+    about: `
+<h2>Texas Hold’em online</h2>
+<p>Texas Hold’em is the most popular form of poker. Here it is played as a small tournament:
+everyone starts with the same chips, the blinds rise, players who lose all their chips are out,
+and the one who takes them all wins. Play free in the browser, with no sign-up and no ads,
+against one to five computer opponents. The chips are not real and nothing is played for money.</p>
+
+<h3>Rules</h3>
+<ul>
+<li>Everyone gets two cards face down. The two players left of the button post the small and
+big blinds.</li>
+<li>Four rounds of betting: before the flop, after the flop (three shared cards), after the turn
+(a fourth) and after the river (a fifth). You may fold, call, check, bet or raise, with no limit,
+up to all your chips (all in).</li>
+<li>A bet nobody calls takes the pot. Otherwise the best five-card hand at the showdown wins,
+made from your two cards and the five on the board.</li>
+<li>Hands from the best: straight flush, four of a kind, full house, flush, straight, three of a
+kind, two pair, a pair, high card.</li>
+<li>A player who is all in can win only as much as they covered; the rest is played for by the
+others in side pots.</li>
+<li>The blinds rise every eight hands. Everyone starts with 1000 chips.</li>
+</ul>
+
+<h3>What is in the game</h3>
+<ul>
+<li>The same nine characters as in Durak and Kozel, with five levels of strength, portraits,
+table talk and Russian voice lines.</li>
+<li>A fair computer: it sees only its own two cards, the board and the betting. The strong
+players weigh their chances and allow for a big bet usually meaning something.</li>
+<li>For training: your chance of winning the hand, a hint for the move, and open cards.</li>
+</ul>
+
+<p class="fine">The game is one of the halls of <a href="${SITE}en/">SynArteum</a>, a museum of
+synthetic art. Try <a href="${GAME}en/">Durak</a> or <a href="${KOZEL}en/">Kozel</a> too. The
+source code is open, under the MIT licence:
+<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
+  },
+  fr: {
+    title: 'Poker Texas Hold’em en ligne — gratuit, contre l’ordinateur',
+    description:
+      'Jouez au Texas Hold’em gratuitement dans votre navigateur : un tournoi contre un à cinq ' +
+      'adversaires artificiels, sans limite, blindes croissantes. Un ordinateur loyal qui ne voit jamais vos cartes.',
+    about: `
+<h2>Texas Hold’em en ligne</h2>
+<p>Le Texas Hold’em est la forme de poker la plus jouée. Ici, il se joue en petit tournoi :
+tout le monde commence avec les mêmes jetons, les blindes montent, ceux qui perdent tous leurs
+jetons sont éliminés, et celui qui les prend tous gagne. Gratuit, dans le navigateur, sans
+inscription ni publicité, contre un à cinq adversaires artificiels. Les jetons ne sont pas réels
+et on ne joue pas d’argent.</p>
+
+<h3>Règles</h3>
+<ul>
+<li>Chacun reçoit deux cartes face cachée. Les deux joueurs à gauche du bouton posent la petite
+et la grosse blinde.</li>
+<li>Quatre tours d’enchères : avant le flop, après le flop (trois cartes communes), après le
+turn (une quatrième) et après la river (une cinquième). On peut se coucher, suivre, parler,
+miser ou relancer, sans limite, jusqu’à tous ses jetons (tapis).</li>
+<li>Une mise que personne ne suit remporte le pot. Sinon, la meilleure main de cinq cartes à
+l’abattage gagne, faite de vos deux cartes et des cinq du tableau.</li>
+<li>Les mains, de la meilleure : quinte flush, carré, full, couleur, quinte, brelan, deux paires,
+une paire, carte haute.</li>
+<li>Un joueur à tapis ne peut gagner que ce qu’il a couvert ; le reste se joue entre les autres
+dans des pots annexes.</li>
+<li>Les blindes montent toutes les huit mains. Chacun commence avec 1000 jetons.</li>
+</ul>
+
+<h3>Ce que contient le jeu</h3>
+<ul>
+<li>Les neuf personnages du Dourak et du Kozel, avec cinq niveaux de force, portraits,
+remarques et voix russes.</li>
+<li>Un ordinateur loyal : il ne voit que ses deux cartes, le tableau et les mises. Les joueurs
+forts pèsent leurs chances et savent qu’une grosse mise veut souvent dire quelque chose.</li>
+<li>Pour s’entraîner : votre chance de gagner la main, un conseil pour le coup et le jeu à
+cartes ouvertes.</li>
+</ul>
+
+<p class="fine">Le jeu est l’une des salles de <a href="${SITE}fr/">SynArteum</a>, un musée d’art
+synthétique. Essayez aussi le <a href="${GAME}fr/">dourak</a> ou le <a href="${KOZEL}fr/">kozel</a>.
+Le code source est ouvert, sous licence MIT :
+<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
   },
 };

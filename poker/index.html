@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--seo-head-->
+  </head>
+  <body data-assets="../durak/">
+    <header id="bar">
+      <h1 id="brand" class="brand">[[brand]]</h1>
+      <div class="meta" id="meta"></div>
+      <div class="score" id="score"></div>
+      <nav>
+        <button id="btn-new" class="ghost"></button>
+        <button id="btn-settings" class="ghost"></button>
+        <button id="btn-about" class="ghost"><span>[[about]]</span></button>
+        <span id="langs"><!--langs:ghost--></span>
+      </nav>
+    </header>
+
+    <main id="stage">
+      <div id="pot" class="pile-label"></div>
+      <div id="dealer"></div>
+      <div id="seats"></div>
+      <div id="cards"></div>
+      <div id="actions">
+        <div id="status"></div>
+        <div id="buttons"></div>
+      </div>
+      <div id="result" hidden></div>
+    </main>
+
+    <dialog id="settings"></dialog>
+    <dialog id="about">
+      <form method="dialog">
+        <div id="about-body"><!--seo-about--></div>
+        <div class="buttons"><button id="about-close" class="primary">[[close]]</button></div>
+      </form>
+    </dialog>
+
+    <script type="module" src="/src/poker/main.ts"></script>
+  </body>
+</html>

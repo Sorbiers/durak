@@ -29,7 +29,18 @@ export type Remark =
   | 'kDealLost' // their pair lost the deal
   | 'kEggs' // sixty all
   | 'kGoats' // the other pair are the goats
-  | 'kWeGoats'; // their own pair are the goats
+  | 'kWeGoats' // their own pair are the goats
+  // Hold'em
+  | 'pFold'
+  | 'pCheck'
+  | 'pCall'
+  | 'pRaise'
+  | 'pAllIn'
+  | 'pWin' // takes a pot
+  | 'pBigWin' // takes a big pot
+  | 'pBust' // has lost every chip
+  | 'pChampion' // has won every chip
+  | 'pYouBust'; // the human has lost every chip
 
 /** How likely a remark is to be made when its moment comes. The rest are always made. */
 export const REMARK_CHANCE: Partial<Record<Remark, number>> = {
@@ -45,6 +56,13 @@ export const REMARK_CHANCE: Partial<Record<Remark, number>> = {
   kBeat: 0.25,
   kSlip: 0.12,
   kPartner: 0.6,
+  pFold: 0.2,
+  pCheck: 0.12,
+  pCall: 0.15,
+  pRaise: 0.35,
+  pAllIn: 0.9,
+  pWin: 0.35,
+  pBigWin: 0.8,
 };
 
 type Lines = Partial<Record<Remark, string[]>>;
@@ -1066,6 +1084,101 @@ const KOZEL_OWN: Record<string, Partial<Record<Lang, Lines>>> = {
 
 for (const lang of Object.keys(KOZEL_COMMON) as Lang[]) Object.assign(COMMON[lang], KOZEL_COMMON[lang]);
 for (const [id, langs] of Object.entries(KOZEL_OWN)) {
+  for (const [lang, lines] of Object.entries(langs) as [Lang, Lines][]) {
+    Object.assign(((PERSONAL[id] ??= {})[lang] ??= {}), lines);
+  }
+}
+
+// Lines for Hold'em.
+const POKER_COMMON: Record<Lang, Lines> = {
+  ru: {
+    pFold: ['Пас.', 'Сбрасываю.', 'Без меня.'],
+    pCheck: ['Чек.', 'Пропускаю.', 'Чек, посмотрим.'],
+    pCall: ['Колл.', 'Отвечаю.', 'Уравниваю.'],
+    pRaise: ['Рейз.', 'Повышаю.', 'Добавлю.'],
+    pAllIn: ['Олл-ин!', 'Все фишки!', 'Иду на все!'],
+    pWin: ['Моё.', 'Забираю.', 'Спасибо за фишки.'],
+    pBigWin: ['Вот это банк!', 'Отличная раздача!', 'Хороший куш.'],
+    pBust: ['Всё, фишек нет.', 'Фишки кончились.', 'Удачи остальным.'],
+    pChampion: ['Все фишки мои!', 'Турнир за мной.', 'Хорошая игра, всем спасибо.'],
+    pYouBust: ['Не повезло.', 'Бывает и так.', 'Ещё турнир?'],
+  },
+  en: {
+    pFold: ['Fold.', "I'm out.", 'Not this one.'],
+    pCheck: ['Check.', 'I check.', "Check, let's see."],
+    pCall: ['Call.', 'I call.', "I'll match it."],
+    pRaise: ['Raise.', 'I raise.', 'A little more.'],
+    pAllIn: ['All in!', 'Every chip!', "I'm all in!"],
+    pWin: ['Mine.', "I'll take that.", 'Thanks for the chips.'],
+    pBigWin: ['What a pot!', 'Lovely hand!', 'A fine haul.'],
+    pBust: ["That's me, empty.", 'Out of chips.', 'Good luck, everyone.'],
+    pChampion: ['All the chips are mine!', 'The tournament is mine.', 'Good game, thank you all.'],
+    pYouBust: ['Bad luck.', 'It happens.', 'Another tournament?'],
+  },
+  fr: {
+    pFold: ['Je passe.', 'Sans moi.', 'Pas celle-ci.'],
+    pCheck: ['Parole.', 'Check.', 'Parole, on verra.'],
+    pCall: ['Je suis.', 'Je paie.', 'Je suis le mouvement.'],
+    pRaise: ['Je relance.', 'Relance.', 'Un peu plus.'],
+    pAllIn: ['Tapis !', 'Tout mon tapis !', 'Je fais tapis !'],
+    pWin: ['À moi.', 'Je prends.', 'Merci pour les jetons.'],
+    pBigWin: ['Quel pot !', 'Belle main !', 'Joli butin.'],
+    pBust: ['C’est fini pour moi.', 'Plus de jetons.', 'Bonne chance à tous.'],
+    pChampion: ['Tous les jetons sont à moi !', 'Le tournoi est à moi.', 'Belle partie, merci à tous.'],
+    pYouBust: ['Pas de chance.', 'Ça arrive.', 'Un autre tournoi ?'],
+  },
+};
+
+const POKER_OWN: Record<string, Partial<Record<Lang, Lines>>> = {
+  boris: {
+    ru: { pAllIn: ['Математика на моей стороне.'], pBigWin: ['Ожидаемая ценность.'], pBust: ['Дисперсия. Бывает.'], pChampion: ['Расчёт победил.'] },
+    en: { pAllIn: ['The maths is on my side.'], pBigWin: ['Expected value.'], pBust: ['Variance. It happens.'], pChampion: ['Calculation wins.'] },
+    fr: { pAllIn: ['Les maths sont de mon côté.'], pBigWin: ['Espérance positive.'], pBust: ['La variance. Ça arrive.'], pChampion: ['Le calcul l’emporte.'] },
+  },
+  vera: {
+    ru: { pAllIn: ['А давайте рискнём.'], pBigWin: ['Какая приятная стопочка.'], pBust: ['Ну что ж, я пойду пить чай.'], pChampion: ['Спасибо, вы были очень щедры.'] },
+    en: { pAllIn: ["Let's take a risk, shall we?"], pBigWin: ['What a pleasant little stack.'], pBust: ["Well, I'll go and have some tea."], pChampion: ['Thank you, you were most generous.'] },
+    fr: { pAllIn: ['Et si on prenait un risque ?'], pBigWin: ['Quelle jolie petite pile.'], pBust: ['Eh bien, je vais prendre un thé.'], pChampion: ['Merci, vous avez été très généreux.'] },
+  },
+  gleb: {
+    ru: { pAllIn: ['Пан или пропал!'], pBigWin: ['Деньги к деньгам!'], pBust: ['Пришла беда — отворяй ворота!'], pChampion: ['Кто смел, тот и съел!'] },
+    en: { pAllIn: ['Sink or swim!'], pBigWin: ['Money goes to money!'], pBust: ['It never rains but it pours!'], pChampion: ['Fortune favours the bold!'] },
+    fr: { pAllIn: ['Ça passe ou ça casse !'], pBigWin: ['L’argent appelle l’argent !'], pBust: ['Un malheur n’arrive jamais seul !'], pChampion: ['La fortune sourit aux audacieux !'] },
+  },
+  lev: {
+    ru: { pAllIn: ['Эх, тряхну стариной.'], pBigWin: ['Старый конь борозды не портит.'], pBust: ['Пойду, вздремну.'], pChampion: ['Опыт не пропьёшь.'] },
+    en: { pAllIn: ["Ah, let's see if I've still got it."], pBigWin: ['An old horse still ploughs straight.'], pBust: ["I'll go and have a nap."], pChampion: ['Experience never fades.'] },
+    fr: { pAllIn: ['Ah, voyons si j’ai encore la main.'], pBigWin: ['C’est dans les vieux pots qu’on fait la meilleure soupe.'], pBust: ['Je vais faire un petit somme.'], pChampion: ['L’expérience ne s’oublie pas.'] },
+  },
+  tamara: {
+    ru: { pAllIn: ['Ответственное решение.'], pBigWin: ['Заслуженно.'], pBust: ['Урок усвоен.'], pChampion: ['Отлично. Все свободны.'] },
+    en: { pAllIn: ['A responsible decision.'], pBigWin: ['Well deserved.'], pBust: ['Lesson learnt.'], pChampion: ['Excellent. Class dismissed.'] },
+    fr: { pAllIn: ['Une décision réfléchie.'], pBigWin: ['Bien mérité.'], pBust: ['Leçon retenue.'], pChampion: ['Excellent. Vous pouvez sortir.'] },
+  },
+  anton: {
+    ru: { pAllIn: ['Олл-ин, погнали!'], pBigWin: ['Изи банк.'], pBust: ['Рандом против меня.'], pChampion: ['GG, все свободны.'] },
+    en: { pAllIn: ["All in, let's go!"], pBigWin: ['Easy pot.'], pBust: ['The odds hate me.'], pChampion: ['GG, everyone.'] },
+    fr: { pAllIn: ['Tapis, c’est parti !'], pBigWin: ['Pot facile.'], pBust: ['Le hasard est contre moi.'], pChampion: ['GG à tous.'] },
+  },
+  fyodor: {
+    ru: { pAllIn: ['А, всё равно.'], pBigWin: ['Ну надо же.'], pBust: ['Как обычно.'], pChampion: ['Сам не верю.'] },
+    en: { pAllIn: ['Oh, whatever.'], pBigWin: ['Well, what do you know.'], pBust: ['As usual.'], pChampion: ["I can't believe it myself."] },
+    fr: { pAllIn: ['Oh, et puis zut.'], pBigWin: ['Ça alors.'], pBust: ['Comme d’habitude.'], pChampion: ['Je n’y crois pas moi-même.'] },
+  },
+  lyuba: {
+    ru: { pAllIn: ['Ой, иду на всё!'], pBigWin: ['Ой, сколько фишечек!'], pBust: ['Ой, всё, я пустая!'], pChampion: ['Ура, я выиграла!'] },
+    en: { pAllIn: ["Oh, I'm going all in!"], pBigWin: ['Oh, so many chips!'], pBust: ["Oh, that's it, I'm empty!"], pChampion: ['Hooray, I won!'] },
+    fr: { pAllIn: ['Oh, je fais tapis !'], pBigWin: ['Oh, que de jetons !'], pBust: ['Oh, c’est fini, je n’ai plus rien !'], pChampion: ['Hourra, j’ai gagné !'] },
+  },
+  kostya: {
+    ru: { pAllIn: ['Олл-ин — это же все фишки, да?'], pBigWin: ['Это всё мне? Круто!'], pBust: ['А фишки где?'], pChampion: ['Я выиграл турнир? Серьёзно?!'] },
+    en: { pAllIn: ['All in means all the chips, right?'], pBigWin: ['All of this for me? Cool!'], pBust: ['Where did my chips go?'], pChampion: ['I won the tournament? Seriously?!'] },
+    fr: { pAllIn: ['Tapis, ça veut dire tous les jetons, non ?'], pBigWin: ['Tout ça pour moi ? Trop bien !'], pBust: ['Ils sont où, mes jetons ?'], pChampion: ['J’ai gagné le tournoi ? Sérieux ?!'] },
+  },
+};
+
+for (const lang of Object.keys(POKER_COMMON) as Lang[]) Object.assign(COMMON[lang], POKER_COMMON[lang]);
+for (const [id, langs] of Object.entries(POKER_OWN)) {
   for (const [lang, lines] of Object.entries(langs) as [Lang, Lines][]) {
     Object.assign(((PERSONAL[id] ??= {})[lang] ??= {}), lines);
   }

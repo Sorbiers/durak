@@ -5,7 +5,7 @@ import { ASSETS } from './root';
 
 const COURT_LOW = 5; // jack
 const COURT_HIGH = 7; // king
-const PICTURE_NAMES = ['jack', 'queen', 'king', 'ace']; // ranks 5..8
+const PICTURE_NAMES = ['jack', 'queen', 'king', 'ace'];
 const SUIT_NAMES = ['spades', 'hearts', 'diamonds', 'clubs'];
 
 const SUIT_SVG = [
@@ -20,15 +20,25 @@ export const suitSvg = (suit: number): string =>
 export const isRed = (suit: number): boolean => suit === 1 || suit === 2;
 
 /**
- * A card with its face and its back. The rank letters are left empty, to be written in the
- * page's language (every element of class "rank").
+ * A card with its face and its back, from a 36-card deck (rank 0 a six, 8 an ace). The rank
+ * letters are left empty, to be written in the page's language (every element of class "rank").
  */
 export function cardElement(c: Card): HTMLElement {
-  const suit = suitOf(c);
   const rank = rankOf(c);
-  const court = rank >= COURT_LOW && rank <= COURT_HIGH;
+  return buildCard(suitOf(c), rank >= COURT_LOW ? rank - COURT_LOW : -1);
+}
+
+/** The same for a 52-card deck: rank 0 is a two, 12 an ace. */
+export function card52Element(c: number): HTMLElement {
+  const rank = c % 13;
+  return buildCard((c / 13) | 0, rank >= 9 ? rank - 9 : -1);
+}
+
+/** A card of a suit; `picture` 0..3 for jack, queen, king and ace, -1 for a number card. */
+function buildCard(suit: number, picture: number): HTMLElement {
+  const court = picture >= 0 && picture <= COURT_HIGH - COURT_LOW;
   const el = document.createElement('div');
-  el.className = `card ${isRed(suit) ? 'red' : 'black'}${court ? ' court' : ''}${rank === 8 ? ' ace' : ''}`;
+  el.className = `card ${isRed(suit) ? 'red' : 'black'}${court ? ' court' : ''}${picture === 3 ? ' ace' : ''}`;
   const index = `<b class="rank"></b>${suitSvg(suit)}`;
   el.innerHTML =
     `<div class="card-inner"><div class="card-face">` +
@@ -36,9 +46,9 @@ export function cardElement(c: Card): HTMLElement {
     `<span class="centre">${court ? '<b class="rank"></b>' : ''}${suitSvg(suit)}</span>` +
     `<span class="idx br">${index}</span>` +
     `</div><div class="card-back"></div></div>`;
-  if (rank >= COURT_LOW) {
+  if (picture >= 0) {
     // Use the picture if a file exists, as SVG or PNG; without one the drawn face remains.
-    const base = `${ASSETS}cards/${PICTURE_NAMES[rank - COURT_LOW]}_${SUIT_NAMES[suit]}`;
+    const base = `${ASSETS}cards/${PICTURE_NAMES[picture]}_${SUIT_NAMES[suit]}`;
     const art = document.createElement('img');
     art.className = 'art';
     art.alt = '';

@@ -1,25 +1,43 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 import { KSTRINGS } from './src/kozel/i18n';
-import { COFFEE, DREAM, GAME, KOZEL, KOZEL_PAGES, LANDING, LANGS, PAGES, SITE, type PageLang, otherLangs } from './src/seo';
+import { PSTRINGS } from './src/poker/i18n';
+import {
+  COFFEE,
+  DREAM,
+  GAME,
+  KOZEL,
+  KOZEL_PAGES,
+  LANDING,
+  LANGS,
+  PAGES,
+  POKER,
+  POKER_PAGES,
+  SITE,
+  type PageLang,
+  otherLangs,
+} from './src/seo';
 import { STRINGS } from './src/ui/i18n';
 
-// The site has three parts, each a single page: the front page at the root and the games in
-// durak/ and kozel/. Each part is written out at four addresses: its own folder, which picks the
+// The site has four parts, each a single page: the front page at the root and the games in
+// durak/, kozel/ and poker/. Each part is written out at four addresses: its own folder, which picks the
 // language from the browser, and ru/, en/ and fr/ inside it, one language each. Search
 // engines list a page by what its HTML says before any script runs, so every address gets
 // its own title, description and texts, and names the others as its translations.
-type Part = 'landing' | 'durak' | 'kozel';
+type Part = 'landing' | 'durak' | 'kozel' | 'poker';
 type Variant = 'root' | PageLang;
 const PARTS: Record<Part, { file: string; url: string }> = {
   landing: { file: 'index.html', url: SITE },
   durak: { file: 'durak/index.html', url: GAME },
   kozel: { file: 'kozel/index.html', url: KOZEL },
+  poker: { file: 'poker/index.html', url: POKER },
 };
 const isGame = (part: Part): boolean => part !== 'landing';
 /** A game's own words: its title and what its page is built with. */
-const gameText = (part: Part, lang: PageLang) => (part === 'kozel' ? KSTRINGS[lang] : STRINGS[lang]);
-const pageText = (part: Part, lang: PageLang) => (part === 'kozel' ? KOZEL_PAGES[lang] : PAGES[lang]);
+const gameText = (part: Part, lang: PageLang) =>
+  part === 'kozel' ? KSTRINGS[lang] : part === 'poker' ? PSTRINGS[lang] : STRINGS[lang];
+const pageText = (part: Part, lang: PageLang) =>
+  part === 'kozel' ? KOZEL_PAGES[lang] : part === 'poker' ? POKER_PAGES[lang] : PAGES[lang];
 const LOCALE: Record<PageLang, string> = { ru: 'ru_RU', en: 'en_US', fr: 'fr_FR' };
 const MUSEUM = 'SynArteum';
 
@@ -45,7 +63,7 @@ function head(part: Part, v: Variant): string {
           inLanguage: LANGS,
           genre: 'Card game',
           playMode: 'SinglePlayer',
-          numberOfPlayers: part === 'kozel' ? '4' : '2-4',
+          numberOfPlayers: part === 'kozel' ? '4' : part === 'poker' ? '2-6' : '2-4',
           applicationCategory: 'GameApplication',
           operatingSystem: 'Any',
           offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
@@ -127,7 +145,7 @@ function sitemap(): string {
   );
 }
 
-const LANG_PAGE = /^\/((?:durak|kozel)\/)?(ru|en|fr)\/(?:index\.html)?(?:\?.*)?$/;
+const LANG_PAGE = /^\/((?:durak|kozel|poker)\/)?(ru|en|fr)\/(?:index\.html)?(?:\?.*)?$/;
 
 function pages(): Plugin {
   return {
@@ -147,7 +165,7 @@ function pages(): Plugin {
       handler(html, ctx) {
         if (!ctx.server) return html;
         const file = ctx.filename.replace(/\\/g, '/');
-        const part: Part = file.endsWith('/durak/index.html') ? 'durak' : file.endsWith('/kozel/index.html') ? 'kozel' : 'landing';
+        const part = (['durak', 'kozel', 'poker'] as const).find((g) => file.endsWith(`/${g}/index.html`)) ?? 'landing';
         const m = (ctx.originalUrl ?? '').match(LANG_PAGE);
         return localize(html, part, m ? (m[2] as PageLang) : 'root');
       },
@@ -177,7 +195,12 @@ export default defineConfig({
   plugins: [pages()],
   build: {
     rollupOptions: {
-      input: { index: at('./index.html'), durak: at('./durak/index.html'), kozel: at('./kozel/index.html') },
+      input: {
+        index: at('./index.html'),
+        durak: at('./durak/index.html'),
+        kozel: at('./kozel/index.html'),
+        poker: at('./poker/index.html'),
+      },
     },
   },
 });
