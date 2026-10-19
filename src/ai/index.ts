@@ -35,6 +35,8 @@ export interface AiOptions {
   rng: Rng;
   timeMs?: number; // thinking time when searching
   iterations?: number; // fixed search size instead of a time limit (simulations, tests)
+  // Weigh the position for the trainer: always search, carefully, even with one move to make.
+  evaluate?: boolean;
 }
 
 export interface AiDecision {
@@ -54,9 +56,9 @@ export function chooseAction(obs: Observation, opt: AiOptions): AiDecision {
   // observer's own hand and the table.
   const world = determinize(obs, opt.rng);
   const legal = legalActions(world);
-  if (legal.length === 1) return { action: legal[0], method: 'forced' };
+  if (legal.length === 1 && !opt.evaluate) return { action: legal[0], method: 'forced' };
 
-  const { search: searches, slip } = opt.skill;
+  const { search: searches, slip } = opt.evaluate ? { search: true, slip: 0 } : opt.skill;
   // In переводной a card led alone invites being passed on, so there the choice stays open.
   let only: number[] | undefined;
   if (opt.skill.singly && !obs.rules.transfer && legal[0] >= A_OPEN) {
@@ -75,8 +77,8 @@ export function chooseAction(obs: Observation, opt: AiOptions): AiDecision {
       ? { iterations: opt.iterations }
       : { timeMs: Math.max(timeMs - (performance.now() - started), timeMs * 0.25) };
 
-  if (obs.rules.players === 2 && obs.deckCount === 0) {
-    // Nothing is hidden any more: the opponent holds exactly the cards not yet seen.
+  if (obs.deckCount === 0 && obs.handSizes.filter((n) => n > 0).length === 2) {
+    // Nothing is hidden any more: the last opponent holds exactly the cards not yet seen.
     // With a fixed search size only the node limit applies, which keeps simulations repeatable.
     const solverMs = opt.iterations !== undefined ? Infinity : timeMs * 0.6;
     const solved = solveEndgame(world, SOLVER_NODE_LIMIT, solverMs);

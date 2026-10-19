@@ -717,6 +717,149 @@ button.pile-label:disabled {
 #status.advice {
   color: #b9e2ff;
 }
+
+/* Each player's results against the line-up. */
+.stats {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  width: max-content; /* its own width, not what is left of the screen to its right */
+  gap: 2px 10px;
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(245, 238, 221, 0.7);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.stats[hidden] {
+  display: none;
+}
+.stats b {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--brass-bright);
+}
+/* Beside a portrait: a short column, its right edge against the picture. */
+.stats.side {
+  flex-direction: column;
+  align-items: flex-end;
+  transform: translateX(-100%);
+}
+.stats.under,
+.stats.mine {
+  flex-wrap: wrap;
+  white-space: normal;
+}
+.stats.under {
+  justify-content: center;
+  transform: translateX(-50%);
+}
+.stats.mine {
+  transform: translateY(-50%);
+}
+.stats span {
+  white-space: nowrap;
+}
+
+/* The player's chance of not ending up the fool, on their plate; faded while others move. */
+.seat .chance {
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: rgba(185, 226, 255, 0.14);
+  color: #b9e2ff;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  cursor: help;
+  transition: opacity 0.25s;
+}
+.seat .chance:empty {
+  display: none;
+}
+.seat .chance.stale {
+  opacity: 0.5;
+}
+
+/* The game log: a column beside the table, which makes room for it. */
+#log {
+  position: fixed;
+  right: 0;
+  top: 52px;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  width: 270px;
+  border-left: 1px solid rgba(216, 178, 106, 0.35);
+  background: rgba(20, 12, 8, 0.92);
+  font-size: 13px;
+  user-select: text;
+}
+body.log-open #stage {
+  margin-right: 270px;
+}
+/* On a narrow screen it lies over the lower part of the table instead. */
+@media (max-width: 760px) {
+  #log {
+    top: auto;
+    left: 0;
+    width: auto;
+    height: 26vh;
+    border-left: 0;
+    border-top: 1px solid rgba(216, 178, 106, 0.35);
+  }
+  body.log-open #stage {
+    margin-right: 0;
+    margin-bottom: 26vh;
+  }
+}
+#log[hidden] {
+  display: none;
+}
+#log header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px 4px 12px;
+  border-bottom: 1px solid rgba(216, 178, 106, 0.2);
+}
+#log header b {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--brass-bright);
+}
+#log-close {
+  padding: 0 6px;
+  border: 0;
+  background: none;
+  color: var(--brass);
+  font-size: 18px;
+  line-height: 1;
+}
+#log-lines {
+  margin: 0;
+  padding: 6px 12px 8px 30px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(216, 178, 106, 0.5) transparent;
+  line-height: 1.45;
+  color: rgba(245, 238, 221, 0.85);
+}
+#log-lines li::marker {
+  color: rgba(245, 238, 221, 0.35);
+  font-size: 11px;
+}
+#log-lines .red,
+#log-lines .black {
+  padding: 0 3px;
+  border-radius: 3px;
+  background: var(--ivory);
+  color: var(--ink);
+  font-weight: 600;
+}
+#log-lines .red {
+  color: var(--cinnabar);
+}
 #buttons {
   display: flex;
   gap: 8px;
@@ -870,7 +1013,7 @@ dialog form {
   padding: 20px 26px;
 }
 #settings .col {
-  gap: 11px;
+  gap: 16px;
 }
 .cols {
   display: flex;
@@ -900,13 +1043,38 @@ dialog h2 {
   color: var(--brass-bright);
 }
 .row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 11.5em minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 14px;
 }
 .row > span {
   color: rgba(245, 238, 221, 0.75);
+}
+/* A choice that belongs to the option above it, set in under that option's text. */
+.row.sub {
+  grid-template-columns: auto minmax(0, 1fr);
+  margin-left: 26px;
+}
+.row.off {
+  opacity: 0.45;
+}
+@media (max-width: 520px) {
+  .row,
+  .row.sub {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  #settings form {
+    padding: 16px 14px;
+  }
+  .group {
+    padding: 4px 10px 12px;
+  }
+  .seg span {
+    padding: 6px 4px;
+    font-size: 13px;
+  }
 }
 .seg {
   display: flex;
@@ -918,9 +1086,15 @@ dialog h2 {
   position: absolute;
   opacity: 0;
 }
+.seg label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 .seg span {
   display: block;
-  padding: 6px 13px;
+  height: 100%;
+  padding: 6px 10px;
+  text-align: center;
   cursor: pointer;
   color: var(--brass);
   font-size: 14px;
@@ -940,7 +1114,7 @@ dialog h2 {
 /* The roster of opponents to choose from. */
 .roster {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
   gap: 8px;
 }
 .pick {
@@ -1060,14 +1234,51 @@ dialog h2 {
   cursor: pointer;
 }
 .check input {
+  flex: none;
   width: 16px;
   height: 16px;
+  margin: 0;
   accent-color: var(--brass);
 }
-/* The star on the options that are aids, and on the note that explains it. */
-.aid {
-  font-weight: 400;
+/* Settings come in framed groups, each with its heading set into the frame. */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 16px 14px;
+  border: 1px solid rgba(216, 178, 106, 0.4);
+  border-radius: 10px;
+}
+.group legend {
+  padding: 0 6px;
+  font-family: var(--display);
+  font-size: 19px;
   color: var(--brass-bright);
+}
+.group .fine {
+  margin: 0;
+}
+/* The training group is switched on and off from its heading. */
+.training legend label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+.training legend input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--brass);
+}
+/* Training switched off: the choices are kept, greyed out, until it is switched on again. */
+.training[disabled] > :not(legend) {
+  opacity: 0.45;
+}
+.fine {
+  margin: 0;
 }
 .fine {
   margin: 4px 0 0;

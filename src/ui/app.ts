@@ -36,7 +36,7 @@ const COURT_HIGH = 7; // king
 const PICTURE_NAMES = ['jack', 'queen', 'king', 'ace']; // ranks 5..8
 const SUIT_NAMES = ['spades', 'hearts', 'diamonds', 'clubs'];
 
-type AvatarMode = 'off' | 'static' | 'context';
+type AvatarMode = 'static' | 'context';
 
 interface Settings {
   opponents: string[]; // character ids, clockwise from the player's left; one to three
@@ -47,8 +47,9 @@ interface Settings {
   // right, leading at the fool.
   nextLead: 'winner' | 'fool';
   thinkMs: number;
-  avatars: AvatarMode; // no portraits, one fixed picture, or pictures that follow the game
-  largePortraits: boolean;
+  portraits: boolean; // a portrait beside each opponent's cards, large where there is room
+  avatars: AvatarMode; // one fixed picture, or pictures that follow the game
+  stats: boolean; // each player's results against the current line-up, beside them
   phrases: boolean; // opponents make remarks in their own voice
   speech: boolean; // remarks are also read aloud
   showKnown: boolean;
@@ -58,19 +59,44 @@ interface Settings {
   trumpCount: boolean; // after a game, say how many trumps each player received
   showPlayable: boolean; // dim the cards that cannot be played now
   showTrumps: boolean; // mark trump cards with a brass band
+  undo: boolean; // a move can be taken back (Ctrl+Z)
+  chance: boolean; // the player's chance of not ending up the fool is always on show
+  gameLog: boolean; // every move is written down in a log beside the table
+  openCards: boolean; // the opponents' hands lie face up
+  // The training options above take effect only while this is on, so the game can be played
+  // straight and the chosen aids come back with one switch.
+  training: boolean;
   lang: Lang;
 }
 
-/** How the player's games ended. Every game ends one of four ways, so the four add up. */
-interface Tally {
-  games: number;
+/** The options that help in learning the game. */
+type Aid = 'showKnown' | 'showPlayable' | 'showTrumps' | 'hints' | 'chance' | 'undo' | 'gameLog' | 'openCards';
+
+/** How one player's games ended. Every game ends one of four ways, so the four add up. */
+interface Score {
   wins: number; // first to get out
   losses: number; // left as the fool, or gave up
   draws: number; // one of the last two, who went out together
   outs: number; // got out, though not first
 }
 
-const NO_TALLY: Tally = { games: 0, wins: 0, losses: 0, draws: 0, outs: 0 };
+/** The games played against one line-up, and how each player at the table fared in them. */
+interface Tally {
+  games: number;
+  scores: Record<string, Score>; // by character id, and 'you' for the player
+}
+
+const NO_SCORE: Score = { wins: 0, losses: 0, draws: 0, outs: 0 };
+const NO_TALLY: Tally = { games: 0, scores: {} };
+
+/** The game as it stood when the player was to move, to go back to with "Take back". */
+interface Snapshot {
+  game: GameState;
+  firstOut: number | undefined;
+  left: boolean[];
+  trumpsDrawn: number[];
+  logLength: number;
+}
 
 const DEFAULTS: Settings = {
   opponents: ['lev'],
@@ -79,8 +105,9 @@ const DEFAULTS: Settings = {
   firstBoutFive: true,
   nextLead: 'fool',
   thinkMs: 4000,
+  portraits: true,
   avatars: 'context',
-  largePortraits: true,
+  stats: false,
   phrases: true,
   speech: false,
   showKnown: false,
@@ -90,6 +117,11 @@ const DEFAULTS: Settings = {
   trumpCount: false,
   showPlayable: true,
   showTrumps: false,
+  undo: false,
+  chance: false,
+  gameLog: false,
+  openCards: false,
+  training: true,
   lang: browserLang(),
 };
 
@@ -136,15 +168,20 @@ export function startApp(): void {
   let aboutLang: Lang | undefined; // the language the About text was last written in
 
   const ai = new AiClient();
+  // A second worker weighs the player's position, for hints and the chance on show, so the
+  // computer players never wait for it.
+  const analyst = new AiClient();
   let settings = load('durak.settings', DEFAULTS);
   // Stored choices may predate the roster or name someone no longer in it.
   const known = settings.opponents.filter((id) => CHARACTERS.some((c) => c.id === id)).slice(0, 3);
   settings = { ...settings, opponents: known.length > 0 ? known : DEFAULTS.opponents };
+  // Portraits used to be switched off as one of their kinds.
+  if ((settings.avatars as string) === 'off') settings = { ...settings, portraits: false, avatars: 'context' };
   // A page in one language is in that language, whatever was chosen before.
   if (PAGE_LANG) settings = { ...settings, lang: PAGE_LANG };
   // The counters last for the browser session, or until they are reset in Settings.
   const session = (): Storage => sessionStorage;
-  let tallies = load<Record<string, Tally>>('durak.tally', {}, session);
+  let tallies = load<Record<string, Tally>>('durak.scores', {}, session);
   let t: Strings = STRINGS[settings.lang];
 
   let game: GameState;
@@ -154,9 +191,18 @@ export function startApp(): void {
   let thinking = -1;
   let selected: Card[] = [];
   let notice = '';
-  let hint: AiDecision | null = null;
-  let hintPending = false;
-  let humanLeft = false; // the human got out before the game ended
+  // The program's view of the player's current turn: worked out on request, or at once when the
+  // chance is on show. The suggested move itself is shown only after "Hint" is pressed.
+  let advice: AiDecision | null = null;
+  let advising: Promise<AiDecision | null> | null = null;
+  let showHint = false;
+  let chance = ''; // the latest chance, kept on show while the others move
+  let snapshots: Snapshot[] = []; // one for each of the player's turns this game
+  let logLines: string[] = []; // the game log, as HTML
+  let logShown = 0; // how many of its lines are on screen
+  // Who got out before the game ended. One who goes out in the very bout that ends the game in
+  // a draw is one of those who drew.
+  let left: boolean[] = [];
   let resigned = false; // the human gave the game up
   let resignArmed = false; // "Resign" was pressed once and is waiting to be confirmed
   let clearTable: (() => void) | null = null; // set while a beaten bout waits to be cleared
@@ -173,6 +219,8 @@ export function startApp(): void {
   let seatEls: HTMLElement[] = [];
   let avatarEls: (HTMLImageElement | null)[] = [];
   let roleEls: (HTMLElement | null)[] = []; // "leads" / "defends" above each opponent's cards
+  let statEls: HTMLElement[] = []; // each player's results, when they are on show
+  let fanEnds: number[] = []; // right edge of each opponent's cards, as last laid out
   // What each seat's face shows for the moment, in "react to the game" mode.
   let moods: { mood: Mood; until: number }[] = [];
   let lastNudge = 0; // when an opponent last remarked on the player taking their time
@@ -220,6 +268,8 @@ export function startApp(): void {
   }
 
   const cardText = (c: Card): string => t.ranks[rankOf(c)] + SUIT_SYMBOLS[suitOf(c)];
+  /** Whether a training option is in effect: chosen, and training switched on. */
+  const aid = (name: Aid): boolean => settings.training && settings[name];
   const isOut = (p: number): boolean => game.hands[p].length === 0 && game.deck.length === 0;
   /** The character in an opponent's seat (seats 1 and up). */
   const who = (seat: number): Character => characterById(settings.opponents[seat - 1]);
@@ -232,6 +282,7 @@ export function startApp(): void {
   const tallyKey = (): string =>
     `${settings.transfer ? 't' : 's'}:` +
     settings.opponents.map((id) => id + ratingOf(characterById(id))).join('+');
+  const scoreId = (seat: number): string => (seat === HUMAN ? 'you' : who(seat).id);
   const seatName = (seat: number): string =>
     seat === HUMAN ? t.you : who(seat).name[settings.lang];
 
@@ -273,16 +324,19 @@ export function startApp(): void {
           : mine ? t.firstLotYou : t.firstLot,
       { name: seatName(leader), card: shown ? cardText(shown.card) : '' },
     );
-    hint = null;
-    hintPending = false;
-    humanLeft = false;
+    dropAdvice();
+    chance = '';
+    snapshots = [];
+    logLines = [fill(t.logDeal, { card: cardHtml(game.trumpCard) })];
+    logShown = 0;
+    left = game.hands.map(() => false);
     resigned = false;
     resignArmed = false;
     resultEl.hidden = true;
     moods = Array.from({ length: n }, () => ({ mood: 'neutral' as Mood, until: 0 }));
     stopSpeaking();
     if (settings.speech) prepareVoices(settings.opponents.map(characterById), settings.lang);
-    if (settings.avatars !== 'off') settings.opponents.forEach((o) => preloadAvatars(characterById(o)));
+    if (settings.portraits) settings.opponents.forEach((o) => preloadAvatars(characterById(o)));
     buildSeats();
 
     // Gather every card on the deck first, then let the deal fly out from there.
@@ -315,6 +369,14 @@ export function startApp(): void {
           continue;
         }
         awaitingHuman = true;
+        snapshots.push({
+          game: cloneState(game),
+          firstOut,
+          left: left.slice(),
+          trumpsDrawn: trumpsDrawn.slice(),
+          logLength: logLines.length,
+        });
+        if (aid('chance')) void analyse();
         render();
         nudgeLater(id);
         return;
@@ -343,10 +405,11 @@ export function startApp(): void {
     const move = decodeAction(a);
     if (moveNo === 0) notice = ''; // the note about who leads has done its job
     moveNo++;
-    hint = null;
-    hintPending = false;
+    dropAdvice();
+    const before = game;
     const next = cloneState(game);
     applyAction(next, a);
+    logMove(seat, a, before, next);
     const wasInDeck = new Set(game.deck);
     next.hands.forEach((hand, p) => {
       for (const c of hand) if (wasInDeck.has(c) && suitOf(c) === next.trump) trumpsDrawn[p]++;
@@ -387,9 +450,12 @@ export function startApp(): void {
       // Hands empty one move at a time, so this is whoever just played their last card.
       firstOut = [seat, ...game.hands.keys()].find((p) => isOut(p));
     }
-    // The player has left the game once a new bout begins without them. Going out in the very
-    // bout that ends the game in a draw makes them one of those who drew.
-    if (game.phase !== OVER && game.attacks.length === 0 && isOut(HUMAN)) humanLeft = true;
+    // A player has left the game once a new bout begins without them.
+    if (game.phase !== OVER && game.attacks.length === 0) {
+      game.hands.forEach((_, p) => {
+        if (isOut(p)) left[p] = true;
+      });
+    }
     render();
     await sleep(swept ? 520 : 200);
   }
@@ -431,8 +497,7 @@ export function startApp(): void {
     resigned = true;
     selected = [];
     notice = '';
-    hint = null;
-    hintPending = false;
+    dropAdvice();
     moveNo++;
     game = { ...cloneState(game), phase: OVER, loser: HUMAN };
     finish();
@@ -451,25 +516,27 @@ export function startApp(): void {
   }
 
   function finish(): void {
-    const key = tallyKey();
-    const tally = { ...NO_TALLY, ...tallies[key] };
-    tally.games++;
-    // A draw between two others, after the player had left, is not the player's draw.
-    if (game.loser === HUMAN) tally.losses++;
-    else if (game.loser === DRAW && !humanLeft) tally.draws++;
-    else if (firstOut === HUMAN) tally.wins++;
-    else tally.outs++;
-    tallies = { ...tallies, [key]: tally };
-    save('durak.tally', tallies, session);
     // The winner leads the next game. After a resignation with nobody out yet, the only
     // possible winner is the lone opponent of a two-player game.
     lastWinner = firstOut ?? (resigned && game.hands.length === 2 ? 1 : undefined);
     lastFool = game.loser >= 0 ? game.loser : undefined;
+    const key = tallyKey();
+    const tally = { ...NO_TALLY, ...tallies[key] };
+    const scores = { ...tally.scores };
+    game.hands.forEach((_, p) => {
+      // A draw between two others, after this player had left, is not this player's draw.
+      const how: keyof Score =
+        game.loser === p ? 'losses' : game.loser === DRAW && !left[p] ? 'draws' : lastWinner === p ? 'wins' : 'outs';
+      const id = scoreId(p);
+      scores[id] = { ...NO_SCORE, ...scores[id], [how]: (scores[id]?.[how] ?? 0) + 1 };
+    });
+    tallies = { ...tallies, [key]: { games: tally.games + 1, scores } };
+    save('durak.scores', tallies, session);
 
     let text: string;
     if (resigned) text = t.youResigned;
     else if (game.loser === HUMAN) text = t.youFool;
-    else if (game.loser === DRAW) text = humanLeft ? t.othersDraw : t.youDraw;
+    else if (game.loser === DRAW) text = left[HUMAN] ? t.othersDraw : t.youDraw;
     else text = fill(t.youWon, { name: seatName(game.loser) });
     // The fool takes it badly; if that is the player, the others are pleased and one says so.
     if (game.loser > HUMAN) react(game.loser, 'fool', 'angry', Infinity);
@@ -477,6 +544,7 @@ export function startApp(): void {
       for (let p = 1; p < game.hands.length; p++) setMood(p, 'happy', Infinity);
       react(1 + ((Math.random() * (game.hands.length - 1)) | 0), 'youFool');
     }
+    logLines.push(text);
     resultEl.innerHTML = `<p></p><small></small><button class="primary">${t.again}</button>`;
     resultEl.querySelector('p')!.textContent = text;
     resultEl.querySelector('small')!.textContent = settings.trumpCount
@@ -569,17 +637,116 @@ export function startApp(): void {
     }
   }
 
-  async function askHint(): Promise<void> {
-    if (!awaitingHuman || hintPending) return;
+  /** Forgets the view of a turn that is over, and stops working one out. */
+  function dropAdvice(): void {
+    analyst.cancel();
+    advice = null;
+    advising = null;
+    showHint = false;
+  }
+
+  /** Weighs the player's position, once per turn, as the strongest computer player would. */
+  function analyse(): Promise<AiDecision | null> {
+    if (advising) return advising;
     const id = gameId;
     const at = moveNo;
-    hintPending = true;
+    const obs = observe(game, HUMAN);
+    // Playing with open cards, the player knows every hand, and so does the advice.
+    if (aid('openCards')) obs.known = game.hands.map((h) => h.slice());
+    advising = analyst.request(obs, skillFor(5), settings.thinkMs, true).then((d) => {
+      if (id !== gameId || at !== moveNo) return null;
+      advice = d;
+      chance = chanceText(d);
+      render();
+      return d;
+    });
+    return advising;
+  }
+
+  function askHint(): void {
+    if (!awaitingHuman) return;
+    showHint = true;
     render();
-    const decision = await ai.request(observe(game, HUMAN), skillFor(5), settings.thinkMs);
-    if (id !== gameId || at !== moveNo) return;
-    hintPending = false;
-    hint = decision;
-    render();
+    void analyse();
+  }
+
+  /** The chance in a word or two, for the player's plate. */
+  function chanceText(d: AiDecision): string {
+    if (d.method === 'solved' && d.outcome !== undefined) {
+      const outcome = d.outcome === 1 ? t.win : d.outcome === 0 ? t.draw : t.lossShort;
+      return fill(t.chanceSolved, { outcome });
+    }
+    const value = d.moves?.find((x) => x.action === d.action)?.value ?? 0.5;
+    return fill(t.chance, { pct: Math.round(value * 100) });
+  }
+
+  /**
+   * Takes the player's last move back, with everything the others did after it. While the
+   * others are still moving, it returns to the turn the player has just played.
+   */
+  function undo(): void {
+    if (!aid('undo') || game.phase === OVER) return;
+    const depth = awaitingHuman ? 2 : 1;
+    if (snapshots.length < depth) return;
+    if (awaitingHuman) snapshots.pop(); // the turn waiting now
+    const back = snapshots.pop()!; // pushed again when that turn comes round
+    const id = ++gameId; // moves under way and their timers are dropped
+    ai.cancel();
+    dropAdvice();
+    clearTable?.();
+    clearTable = null;
+    stopSpeaking();
+    game = cloneState(back.game);
+    firstOut = back.firstOut;
+    left = back.left.slice();
+    trumpsDrawn = back.trumpsDrawn.slice();
+    logLines.length = back.logLength;
+    logLines.push(t.logUndo);
+    logShown = 0;
+    moveNo++;
+    awaitingHuman = false;
+    thinking = -1;
+    selected = [];
+    notice = '';
+    resignArmed = false;
+    void run(id);
+  }
+
+  const cardHtml = (c: Card): string =>
+    `<span class="${isRed(suitOf(c)) ? 'red' : 'black'}">${cardText(c)}</span>`;
+
+  /** Writes a move into the log, and how the bout ended if the move ended it. */
+  function logMove(seat: number, a: number, before: GameState, next: GameState): void {
+    const m = decodeAction(a);
+    const who = seatName(seat);
+    const form = (pair: string[]): string => pair[seat === HUMAN ? 1 : 0];
+    let line = '';
+    if (m.type === 'open') line = fill(form(t.logLead), { who, cards: m.cards.map(cardHtml).join(' ') });
+    else if (m.type === 'throw') line = fill(form(t.logThrow), { who, cards: cardHtml(m.card) });
+    else if (m.type === 'defend') {
+      line = fill(form(t.logBeat), { who, target: cardHtml(before.attacks[m.index]), cards: cardHtml(m.card) });
+    } else if (m.type === 'transfer') line = fill(form(t.logTransfer), { who, cards: cardHtml(m.card) });
+    else if (m.type === 'take') line = fill(form(t.logTake), { who });
+    if (line) logLines.push(line);
+
+    // The bout is over once the table is bare again.
+    const onTable = (s: GameState): number => s.attacks.length + s.defenses.filter((d) => d >= 0).length;
+    if (onTable(next) === 0 && (onTable(before) > 0 || m.type === 'open')) {
+      const swept = next.discard.length - before.discard.length;
+      if (swept > 0) logLines.push(fill(t.logBeaten, { n: swept }));
+      else {
+        const n = onTable(before) + (m.type === 'throw' || m.type === 'defend' ? 1 : 0);
+        const taker = before.defender;
+        logLines.push(fill(t.logTook[taker === HUMAN ? 1 : 0], { who: seatName(taker), n }));
+      }
+    }
+    for (let p = 0; p < next.hands.length; p++) {
+      const wasIn = before.hands[p].length > 0 || before.deck.length > 0;
+      const isOutNow = next.hands[p].length === 0 && next.deck.length === 0;
+      if (wasIn && isOutNow && next.phase !== OVER) {
+        logLines.push(fill(t.logOut[p === HUMAN ? 1 : 0], { who: seatName(p) }));
+      }
+    }
   }
 
   function moveText(a: number): string {
@@ -601,15 +768,15 @@ export function startApp(): void {
   }
 
   function hintLine(): string {
-    if (hintPending) return t.hintThinking;
-    if (!hint) return '';
-    const move = moveText(hint.action);
-    if (hint.method === 'forced') return fill(t.hintForced, { move });
-    if (hint.method === 'solved') {
-      const outcome = hint.outcome === 1 ? t.win : hint.outcome === 0 ? t.draw : t.loss;
+    if (!showHint) return '';
+    if (!advice) return t.hintThinking;
+    const move = moveText(advice.action);
+    if (legalActions(game).length === 1) return fill(t.hintForced, { move });
+    if (advice.method === 'solved') {
+      const outcome = advice.outcome === 1 ? t.win : advice.outcome === 0 ? t.draw : t.loss;
       return fill(t.hintSolved, { move, outcome });
     }
-    const value = hint.moves?.find((x) => x.action === hint!.action)?.value ?? 0.5;
+    const value = advice.moves?.find((x) => x.action === advice!.action)?.value ?? 0.5;
     return fill(t.hintSearch, { move, pct: Math.round(value * 100) });
   }
 
@@ -638,7 +805,7 @@ export function startApp(): void {
   }
 
   const moodOf = (seat: number): Mood => {
-    if (settings.avatars !== 'context') return 'neutral';
+    if (!settings.portraits || settings.avatars !== 'context') return 'neutral';
     if (thinking === seat) return 'thinking';
     return moods[seat].until > performance.now() ? moods[seat].mood : 'neutral';
   };
@@ -716,6 +883,7 @@ export function startApp(): void {
     seatEls = [];
     avatarEls = [];
     roleEls = [];
+    statEls = [];
     for (let p = 0; p < game.hands.length; p++) {
       let avatar: HTMLImageElement | null = null;
       let role: HTMLElement | null = null;
@@ -734,27 +902,42 @@ export function startApp(): void {
       const el = document.createElement('div');
       el.className = p === HUMAN ? 'seat me' : 'seat';
       el.innerHTML =
-        `<span class="name"></span><span class="count"></span><span class="role"></span>` +
+        `<span class="name"></span><span class="count"></span><span class="role"></span><span class="chance"></span>` +
         `<span class="dots"><i></i><i></i><i></i></span><span class="bubble"></span>`;
       seatsLayer.appendChild(el);
       seatEls.push(el);
+      const stats = document.createElement('div');
+      stats.className = 'stats';
+      seatsLayer.appendChild(stats);
+      statEls.push(stats);
     }
   }
 
   function render(instant = false): void {
     const rect = stage.getBoundingClientRect();
     const over = game.phase === OVER;
-    const layout = computeLayout(game, rect.width, rect.height, {
-      human: HUMAN,
-      selected,
-      revealAll: over,
-      showKnown: settings.showKnown,
-      avatars: settings.avatars === 'off' ? 'off' : settings.largePortraits ? 'large' : 'normal',
-    });
+    const lay = (avatars: 'off' | 'normal' | 'large') =>
+      computeLayout(game, rect.width, rect.height, {
+        human: HUMAN,
+        selected,
+        revealAll: over || aid('openCards'),
+        showKnown: aid('showKnown'),
+        avatars,
+      });
+    // Portraits are large, unless that would leave the table too little room for a bout.
+    let layout = lay(settings.portraits ? 'large' : 'off');
+    const large = settings.portraits && layout.geo.tableRoom >= layout.geo.ch * 1.7;
+    if (settings.portraits && !large) layout = lay('normal');
     geo = layout.geo;
+    fanEnds = game.hands.map(() => 0);
+    for (const place of layout.places.values()) {
+      if (place.where === 'hand' && place.seat !== HUMAN) {
+        fanEnds[place.seat] = Math.max(fanEnds[place.seat], place.x + (geo.cw * place.scale) / 2);
+      }
+    }
     stage.style.setProperty('--cw', `${geo.cw}px`);
     stage.classList.toggle('instant', instant);
-    stage.classList.toggle('big-portraits', settings.avatars !== 'off' && settings.largePortraits);
+    stage.classList.toggle('big-portraits', large);
 
     const legal = awaitingHuman ? legalActions(game, [], true) : [];
     const playable = new Set<Card>();
@@ -768,8 +951,8 @@ export function startApp(): void {
       }
     }
     const hinted = new Set<Card>();
-    if (hint && awaitingHuman) {
-      const m = decodeAction(hint.action);
+    if (showHint && advice && awaitingHuman) {
+      const m = decodeAction(advice.action);
       if (m.type === 'open') m.cards.forEach((c) => hinted.add(c));
       else if (m.type !== 'take' && m.type !== 'pass') hinted.add(m.card);
       if (m.type === 'defend') hinted.add(game.attacks[m.index]);
@@ -795,10 +978,10 @@ export function startApp(): void {
       // Without the highlight every card in hand looks and lifts alike; the player works out
       // what is legal, and an illegal click is simply refused.
       const canPlay = mine && playable.has(c);
-      el.classList.toggle('trump', settings.showTrumps && suitOf(c) === game.trump);
+      el.classList.toggle('trump', aid('showTrumps') && suitOf(c) === game.trump);
       el.classList.toggle('playable', canPlay);
-      el.classList.toggle('liftable', settings.showPlayable ? canPlay : mine && awaitingHuman);
-      el.classList.toggle('dim', settings.showPlayable && mine && awaitingHuman && !canPlay);
+      el.classList.toggle('liftable', aid('showPlayable') ? canPlay : mine && awaitingHuman);
+      el.classList.toggle('dim', aid('showPlayable') && mine && awaitingHuman && !canPlay);
       el.classList.toggle('selected', selected.includes(c));
       el.classList.toggle('target', targets.has(c));
       el.classList.toggle('hinted', hinted.has(c));
@@ -817,6 +1000,19 @@ export function startApp(): void {
     renderPiles();
     renderActions(legal, over);
     renderBar();
+    renderLog();
+  }
+
+  function renderLog(): void {
+    const panel = $('log');
+    panel.hidden = !aid('gameLog');
+    document.body.classList.toggle('log-open', !panel.hidden);
+    $('log-title').textContent = t.logTitle;
+    if (panel.hidden || logShown === logLines.length) return;
+    const list = $('log-lines');
+    list.innerHTML = logLines.map((line) => `<li>${line}</li>`).join('');
+    logShown = logLines.length;
+    list.scrollTop = list.scrollHeight;
   }
 
   function renderSeats(): void {
@@ -860,6 +1056,15 @@ export function startApp(): void {
       const plateRole = el.querySelector<HTMLElement>('.role')!;
       plateRole.textContent = out && !over ? (!mine && who(p).female ? t.outShe : t.out) : mine ? word : '';
       plateRole.className = `role${mine && part ? ` ${part}` : ''}`;
+      if (mine) {
+        // The chance stays on show while the others move, faded until the player's next turn.
+        const chanceEl = el.querySelector<HTMLElement>('.chance')!;
+        const on = aid('chance') && !over && !out;
+        chanceEl.textContent = on ? chance || (awaitingHuman ? fill(t.chance, { pct: '…' }) : '') : '';
+        chanceEl.title = t.chanceTitle;
+        chanceEl.classList.toggle('stale', !awaitingHuman || !advice);
+      }
+      renderStats(p);
       const chip = roleEls[p];
       const where = geo.roles[p];
       if (chip && where) {
@@ -869,6 +1074,58 @@ export function startApp(): void {
         chip.style.top = `${where.y}px`;
       }
     }
+  }
+
+  /**
+   * A player's results against this line-up: to the left of an opponent's portrait where
+   * there is room before the neighbour's cards, otherwise under their name plate; beside the
+   * player's own plate.
+   */
+  function renderStats(p: number): void {
+    const el = statEls[p];
+    const tally = tallies[tallyKey()];
+    if (!settings.stats || !tally || tally.games === 0) {
+      el.hidden = true;
+      return;
+    }
+    const score = { ...NO_SCORE, ...tally.scores[scoreId(p)] };
+    // One on one there is no getting out without being first.
+    const parts: [keyof Score, string][] = [['wins', t.statWins], ['losses', t.statLosses]];
+    if (game.hands.length > 2) parts.push(['outs', t.statOuts]);
+    parts.push(['draws', t.statDraws]);
+    el.innerHTML = parts.map(([k, label]) => `<span><b>${score[k]}</b> ${label}</span>`).join('');
+    el.hidden = false;
+    const W = stage.clientWidth;
+    const spot = geo.avatars[p];
+    let x: number;
+    let y: number;
+    let kind: string;
+    let room: number; // widest the line may be before it wraps
+    if (p === HUMAN) {
+      x = geo.seats[p].x + seatEls[p].offsetWidth + 10;
+      y = geo.seats[p].y;
+      kind = 'mine';
+      room = W - x - 8;
+    } else if (spot && spot.x - spot.size / 2 - (p > 1 ? fanEnds[p - 1] : 0) >= 92) {
+      x = spot.x - spot.size / 2 - 8;
+      y = spot.y - spot.size / 2 + 2;
+      kind = 'side';
+      room = x - (p > 1 ? fanEnds[p - 1] : 0) - 4;
+    } else {
+      x = geo.seats[p].x;
+      y = geo.seats[p].y + 34;
+      kind = 'under';
+      room = W / Math.max(1, game.hands.length - 1) - 10;
+    }
+    el.className = `stats ${kind}`;
+    el.style.maxWidth = `${Math.max(80, room)}px`;
+    if (kind === 'under') {
+      // Centred under the plate, but kept on the screen.
+      const half = el.offsetWidth / 2;
+      x = Math.min(Math.max(x, half + 4), W - half - 4);
+    }
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
   }
 
   /**
@@ -919,7 +1176,7 @@ export function startApp(): void {
     discardLabel.textContent = `${t.discarded} · ${game.discard.length}`;
     discardLabel.hidden = game.discard.length === 0;
     // Looking through the discard is part of the memory aid; without it the pile stays shut.
-    $<HTMLButtonElement>('discard-label').disabled = !settings.showKnown;
+    $<HTMLButtonElement>('discard-label').disabled = !aid('showKnown');
     discardLabel.style.left = `${geo.discard.x}px`;
     discardLabel.style.top = `${geo.discard.y}px`;
   }
@@ -946,7 +1203,7 @@ export function startApp(): void {
       button(t.clear, 'primary', clearTable);
     } else if (thinking >= 0) status = fill(t.thinking, { name: seatName(thinking) });
     else if (awaitingHuman) {
-      const hinting = hint ? decodeAction(hint.action).type : '';
+      const hinting = showHint && advice ? decodeAction(advice.action).type : '';
       if (game.phase === DEFEND) {
         const canTransfer = legal.some((a) => decodeAction(a).type === 'transfer');
         status = selected.length ? t.chooseTarget : canTransfer ? t.defendOrTransfer : t.defend;
@@ -967,7 +1224,7 @@ export function startApp(): void {
       }
       // Cards that have been lifted can always be put back.
       if (selected.length) button(t.cancel, 'plain', cancelSelection);
-      if (settings.hints) button(t.hint, 'plain', () => void askHint());
+      if (aid('hints')) button(t.hint, 'plain', askHint);
     }
     // Resigning is kept in the corner, well away from the buttons used on every move.
     const resignButton = $('resign');
@@ -977,7 +1234,7 @@ export function startApp(): void {
     resignButton.style.left = `${geo.resign.x}px`;
     resignButton.style.top = `${geo.resign.y}px`;
     statusEl.textContent = notice || hintLine() || status;
-    statusEl.classList.toggle('advice', !notice && (hint !== null || hintPending));
+    statusEl.classList.toggle('advice', !notice && showHint);
   }
 
   function renderBar(): void {
@@ -987,10 +1244,8 @@ export function startApp(): void {
     $('meta').innerHTML =
       `<span>${settings.transfer ? t.transfer : t.simple}</span>` +
       `<span class="trump-chip ${isRed(game.trump) ? 'red' : 'black'}">${t.trump} ${suitSvg(game.trump)}</span>`;
-    const tally = { ...NO_TALLY, ...tallies[tallyKey()] };
-    // One on one there is no getting out without being first.
-    const line = settings.opponents.length > 1 ? t.tally : t.tallyDuel;
-    $('score').textContent = tally.games > 0 ? fill(line, { ...tally }) : '';
+    const games = tallies[tallyKey()]?.games ?? 0;
+    $('score').textContent = games > 0 ? fill(t.tally, { games }) : '';
     $('btn-new').textContent = t.newGame;
     $('btn-settings').textContent = t.settings;
     $('btn-about').firstElementChild!.textContent = t.about;
@@ -1017,10 +1272,9 @@ export function startApp(): void {
             `<label><input type="radio" name="${name}" value="${value}"${value === current ? ' checked' : ''}><span>${label}</span></label>`,
         )
         .join('')}</div>`;
-    // An aid is starred: the note under the list says whom the starred options are for.
-    const check = (name: string, label: string, on: boolean, aid = false): string =>
+    const check = (name: string, label: string, on: boolean): string =>
       `<label class="check"><input type="checkbox" name="${name}"${on ? ' checked' : ''}>` +
-      `<span>${label}${aid ? ' <b class="aid">*</b>' : ''}</span></label>`;
+      `<span>${label}</span></label>`;
 
     // Opponents are picked from the roster, by face or by the stars that show their strength.
     // The order of picking is the order of seating, clockwise from the player's left.
@@ -1042,7 +1296,7 @@ export function startApp(): void {
           return (
             `<div class="pick${order >= 0 ? ' on' : ''}" data-id="${c.id}">` +
             `<button type="button" class="face" aria-pressed="${order >= 0}">` +
-            (settings.avatars !== 'off' ? `<img src="${avatarUrl(c, 'neutral')}" alt="">` : '') +
+            (settings.portraits ? `<img src="${avatarUrl(c, 'neutral')}" alt="">` : '') +
             `<b>${c.name[settings.lang]}</b></button>` +
             `<span class="stars${usual}">${stars}</span>` +
             (settings.speech ? `<button type="button" class="hear" aria-label="${t.hear}" title="${t.hear}">▶</button>` : '') +
@@ -1052,29 +1306,48 @@ export function startApp(): void {
         })
         .join('');
 
+    const row = (label: string, control: string, cls = ''): string =>
+      `<div class="row${cls}"><span>${label}</span>${control}</div>`;
+
     settingsDialog.innerHTML =
       `<form method="dialog"><h2>${t.setTitle}</h2>` +
-      // Two columns where there is room: the game and the opponents, then the switches.
+      // Two columns where there is room: the game and the opponents, then the table and the aids.
       `<div class="cols"><div class="col">` +
-      `<div class="row"><span>${t.setGame}</span>${seg('transfer', [['0', t.simple], ['1', t.transfer]], settings.transfer ? '1' : '0')}</div>` +
-      `<div class="row"><span>${t.setOpponents}</span>${seg('shown', [['all', t.all], ['real', t.realistic], ['cartoon', t.cartoon]], shown)}</div>` +
+      `<fieldset class="group"><legend>${t.secGame}</legend>` +
+      row(t.setGame, seg('transfer', [['0', t.simple], ['1', t.transfer]], settings.transfer ? '1' : '0')) +
+      row(t.setNextLead, seg('nextLead', [['winner', t.leadWinner], ['fool', t.leadFool]], settings.nextLead)) +
+      row(t.setThink, seg('thinkMs', [['600', t.fast], ['1500', t.normal], ['4000', t.deep]], String(settings.thinkMs))) +
+      check('firstBoutFive', t.setFive, settings.firstBoutFive) +
+      `</fieldset>` +
+      `<fieldset class="group"><legend>${t.setOpponents}</legend>` +
+      seg('shown', [['all', t.all], ['real', t.realistic], ['cartoon', t.cartoon]], shown) +
       `<div class="roster"></div><p class="fine">${t.pickHint}</p>` +
+      `</fieldset>` +
       `</div><div class="col">` +
-      `<div class="row"><span>${t.setNextLead}</span>${seg('nextLead', [['winner', t.leadWinner], ['fool', t.leadFool]], settings.nextLead)}</div>` +
-      `<div class="row"><span>${t.setThink}</span>${seg('thinkMs', [['600', t.fast], ['1500', t.normal], ['4000', t.deep]], String(settings.thinkMs))}</div>` +
-      `<div class="row"><span>${t.setAvatars}</span>${seg('avatars', [['off', t.avOff], ['static', t.avStatic], ['context', t.avContext]], settings.avatars)}</div>` +
-      check('largePortraits', t.setLarge, settings.largePortraits) +
+      `<fieldset class="group"><legend>${t.secTable}</legend>` +
+      check('portraits', t.setPortraits, settings.portraits) +
+      row(t.portraitKind, seg('avatars', [['static', t.avStatic], ['context', t.avContext]], settings.avatars), ' sub') +
       check('phrases', t.setPhrases, settings.phrases) +
       check('speech', t.setSpeech, settings.speech) +
-      check('firstBoutFive', t.setFive, settings.firstBoutFive) +
-      check('showKnown', t.setKnown, settings.showKnown, true) +
       check('autoDiscard', t.setAutoDiscard, settings.autoDiscard) +
-      check('hints', t.setHints, settings.hints, true) +
-      check('showPlayable', t.setPlayable, settings.showPlayable, true) +
-      check('showTrumps', t.setTrumps, settings.showTrumps, true) +
       check('showArrow', t.setArrow, settings.showArrow) +
       check('trumpCount', t.setTrumpCount, settings.trumpCount) +
-      `<p class="fine"><b class="aid">*</b> ${t.aidNote}</p>` +
+      check('stats', t.setStats, settings.stats) +
+      `</fieldset>` +
+      // The aids for learning the game, apart from the rest.
+      `<fieldset class="group training"${settings.training ? '' : ' disabled'}>` +
+      `<legend title="${t.aidNote}"><label><input type="checkbox" name="training"${settings.training ? ' checked' : ''}>` +
+      `<span>${t.training}</span></label></legend>` +
+      `<p class="fine">${t.aidNote}</p>` +
+      check('showKnown', t.setKnown, settings.showKnown) +
+      check('showPlayable', t.setPlayable, settings.showPlayable) +
+      check('showTrumps', t.setTrumps, settings.showTrumps) +
+      check('hints', t.setHints, settings.hints) +
+      check('chance', t.setChance, settings.chance) +
+      check('undo', t.setUndo, settings.undo) +
+      check('gameLog', t.setLog, settings.gameLog) +
+      check('openCards', t.setOpen, settings.openCards) +
+      `</fieldset>` +
       `</div></div>` +
       `<p class="fine">${t.fairness}</p>` +
       `<div class="buttons"><button type="button" class="plain" data-act="reset">${t.resetTally}</button>` +
@@ -1117,13 +1390,17 @@ export function startApp(): void {
     form.querySelector('[data-act=close]')!.addEventListener('click', () => settingsDialog.close());
     form.querySelector('[data-act=reset]')!.addEventListener('click', () => {
       tallies = {};
-      save('durak.tally', tallies, session);
-      renderBar();
+      save('durak.scores', tallies, session);
+      render();
     });
     // These only change what is shown or heard, so they take effect at once, mid-game included.
     const apply = (change: Partial<Settings>): void => {
       settings = { ...settings, ...change };
-      if (!settings.hints) hint = null;
+      if (!aid('hints')) showHint = false;
+      // What the advice knows, or whether it is wanted, may have changed with this.
+      if ('openCards' in change || 'training' in change) dropAdvice();
+      if (awaitingHuman && aid('chance')) void analyse();
+      if (change.gameLog) logShown = 0;
       // Voice clips are fetched only while speech is on.
       if ('speech' in change) {
         if (settings.speech) prepareVoices(settings.opponents.map(characterById), settings.lang);
@@ -1132,18 +1409,33 @@ export function startApp(): void {
       save('durak.settings', settings);
       render();
     };
-    const boxes = ['largePortraits', 'phrases', 'speech', 'showKnown', 'autoDiscard', 'hints', 'showPlayable', 'showTrumps', 'showArrow', 'trumpCount'] as const;
+    const boxes = [
+      'portraits', 'phrases', 'speech', 'showKnown', 'autoDiscard', 'hints', 'showPlayable',
+      'showTrumps', 'showArrow', 'trumpCount', 'stats', 'chance', 'undo', 'gameLog', 'openCards',
+      'training',
+    ] as const;
+    // The kind of portrait is a choice only while there are portraits.
+    const kinds = form.querySelector<HTMLElement>('.row.sub')!;
+    const showKinds = (): void => {
+      kinds.classList.toggle('off', !settings.portraits);
+      for (const radio of kinds.querySelectorAll('input')) radio.disabled = !settings.portraits;
+    };
+    showKinds();
     for (const name of boxes) {
       const box = form.querySelector<HTMLInputElement>(`[name=${name}]`)!;
       box.addEventListener('change', () => {
         apply({ [name]: box.checked });
         if (name === 'speech') rosterEl.innerHTML = roster(); // the "hear" buttons come and go
+        if (name === 'training') form.querySelector('.training')!.toggleAttribute('disabled', !box.checked);
+        if (name === 'portraits') {
+          showKinds();
+          rosterEl.innerHTML = roster();
+        }
       });
     }
     for (const radio of form.querySelectorAll<HTMLInputElement>('[name=avatars]')) {
       radio.addEventListener('change', () => {
         apply({ avatars: radio.value as AvatarMode });
-        rosterEl.innerHTML = roster();
       });
     }
     form.addEventListener('submit', () => {
@@ -1192,6 +1484,12 @@ export function startApp(): void {
     resign();
   });
   $('btn-about').addEventListener('click', () => aboutDialog.showModal());
+  // Closing the log switches it off; it is switched on again in Settings.
+  $('log-close').addEventListener('click', () => {
+    settings = { ...settings, gameLog: false };
+    save('durak.settings', settings);
+    render();
+  });
   $('langs').addEventListener('click', (e) => {
     const link = (e.target as Element).closest<HTMLElement>('a[data-lang]');
     if (!link) return;
@@ -1211,13 +1509,18 @@ export function startApp(): void {
   });
   $('discard-label').addEventListener('click', (e) => {
     e.stopPropagation();
-    if (settings.showKnown) openDiscard();
+    if (aid('showKnown')) openDiscard();
   });
   stage.addEventListener('click', cancelSelection);
   document.addEventListener('keydown', (e) => {
     if (document.querySelector('dialog[open]')) return; // a dialog handles its own keys
     if (e.key === 'Escape') {
       cancelSelection();
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') {
+      e.preventDefault();
+      undo();
       return;
     }
     if (e.key !== ' ' && e.key !== 'Enter') return;

@@ -26,6 +26,7 @@ export interface Geometry {
   deck: { x: number; y: number };
   discard: { x: number; y: number }; // where the discard's label goes: centred on x, at y
   actionY: number;
+  tableRoom: number; // height of the cloth between the opponents and the player's buttons
 }
 
 export interface LayoutOptions {
@@ -271,6 +272,9 @@ export function computeLayout(
   const resign = { x: W - 12, y: H - 12 }; // the bottom right corner
   return {
     places,
-    geo: { cw, ch, seats, avatars, roles, resign, aims, centre: { x: W / 2, y: tableY }, deck, discard, actionY },
+    geo: {
+      cw, ch, seats, avatars, roles, resign, aims, centre: { x: W / 2, y: tableY }, deck, discard, actionY,
+      tableRoom: tableBottom - tableTop,
+    },
   };
 }

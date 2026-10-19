@@ -115,5 +115,6 @@ describe('computer players', () => {
       const s = playGame(rules, levels.slice(0, rules.players), mulberry32(game * 31 + rules.players));
       expect(s.phase).toBe(OVER);
     }
-  });
+    // The exact solver now also finishes larger games once two players are left, which takes time.
+  }, 120_000);
 });

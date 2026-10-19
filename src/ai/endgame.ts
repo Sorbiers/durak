@@ -24,16 +24,20 @@ const UPPER = 2;
 class Aborted extends Error {}
 
 /**
- * Exact solver for two players once the deck is empty. At that point each side can work out
- * the other's hand by counting cards, so the rest of the game is a puzzle with a right answer.
- * Returns null if the position is too large to solve within the limits.
+ * Exact solver for the last two players once the deck is empty. At that point each side can
+ * work out the other's hand by counting cards, so the rest of the game is a puzzle with a right
+ * answer. Players already out of a larger game take no further part. Returns null while more
+ * than two are still playing, or if the position is too large to solve within the limits.
  */
 export function solveEndgame(
   root: GameState,
   nodeLimit: number,
   timeMs: number,
 ): EndgameResult | null {
-  if (root.hands.length !== 2 || root.deck.length !== 0) return null;
+  if (root.deck.length !== 0) return null;
+  const live = root.hands.flatMap((h, p) => (h.length > 0 ? [p] : []));
+  if (live.length !== 2) return null;
+  const [one, two] = live;
   // The discard pile plays no further part; dropping it keeps the copies made below small.
   root = { ...cloneState(root), discard: [] };
 
@@ -45,8 +49,8 @@ export function solveEndgame(
 
   const keyOf = (s: GameState): string => {
     key.fill(0);
-    for (const c of s.hands[0]) key[(c / 12) | 0] |= 1 << (c % 12);
-    for (const c of s.hands[1]) key[3 + ((c / 12) | 0)] |= 1 << (c % 12);
+    for (const c of s.hands[one]) key[(c / 12) | 0] |= 1 << (c % 12);
+    for (const c of s.hands[two]) key[3 + ((c / 12) | 0)] |= 1 << (c % 12);
     for (let i = 0; i < s.attacks.length; i++) {
       const a = s.attacks[i];
       const d = s.defenses[i];
@@ -54,13 +58,15 @@ export function solveEndgame(
       if (d >= 0) key[6 + ((d / 12) | 0)] |= 1 << (d % 12);
       else key[9 + ((a / 12) | 0)] |= 1 << (a % 12);
     }
+    // Seats are kept as they are: a player who has just gone out may still be the bout's attacker.
     key[12] =
       s.turn |
-      (s.attacker << 1) |
-      (s.phase << 2) |
-      (s.passed << 4) |
-      (s.attacks.length << 6) |
-      (s.fresh ? 1 << 9 : 0);
+      (s.attacker << 2) |
+      (s.defender << 4) |
+      (s.phase << 6) |
+      (s.passed << 8) |
+      (s.attacks.length << 12) |
+      (s.fresh ? 1 << 15 : 0);
     return String.fromCharCode(...key);
   };
 
@@ -75,10 +81,10 @@ export function solveEndgame(
   const line = new Map<string, number>();
   let leansOn = Infinity;
 
-  // Value for seat 0.
+  // Value for the first of the two.
   const solve = (s: GameState, alpha: number, beta: number, depth: number): number => {
     leansOn = Infinity;
-    if (s.phase === OVER) return s.loser === DRAW ? 0 : s.loser === 0 ? -1 : 1;
+    if (s.phase === OVER) return s.loser === DRAW ? 0 : s.loser === one ? -1 : 1;
     if (++nodes > nodeLimit) throw new Aborted();
     if ((nodes & 4095) === 0 && performance.now() > deadline) throw new Aborted();
 
@@ -98,7 +104,7 @@ export function solveEndgame(
     }
 
     const moves = legalActions(s).sort((x, y) => cost(x) - cost(y));
-    const maximizing = s.turn === 0;
+    const maximizing = s.turn === one;
     const alpha0 = alpha;
     const beta0 = beta;
     let best = maximizing ? -2 : 2;
@@ -131,7 +137,7 @@ export function solveEndgame(
   };
 
   try {
-    const sign = root.turn === 0 ? 1 : -1;
+    const sign = root.turn === one ? 1 : -1;
     const values = new Map<number, number>();
     let value = -2;
     line.set(keyOf(root), 0);

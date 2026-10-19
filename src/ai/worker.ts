@@ -8,6 +8,7 @@ export interface AiRequest {
   obs: Observation;
   skill: Skill;
   timeMs: number;
+  evaluate?: boolean;
 }
 
 export interface AiResponse {
@@ -16,8 +17,8 @@ export interface AiResponse {
 }
 
 self.onmessage = (e: MessageEvent<AiRequest>) => {
-  const { id, obs, skill, timeMs } = e.data;
-  const decision = chooseAction(obs, { skill, timeMs, rng: Math.random });
+  const { id, obs, skill, timeMs, evaluate } = e.data;
+  const decision = chooseAction(obs, { skill, timeMs, evaluate, rng: Math.random });
   const response: AiResponse = { id, decision };
   self.postMessage(response);
 };
