@@ -49,7 +49,7 @@ export const PAGES: Record<PageLang, PageText> = {
 <h3>Что есть в игре</h3>
 <ul>
 <li>Подкидной и переводной дурак, колода 36 карт, от двух до четырёх игроков.</li>
-<li>Девять соперников с характером и пять уровней силы, от новичка до мастера; уровень каждого
+<li>Семнадцать соперников с характером и пять уровней силы, от новичка до мастера; уровень каждого
 можно задать отдельно.</li>
 <li>Портреты, реплики и озвучка — по желанию.</li>
 <li>Подсказка хода, просмотр «бито», счёт побед и поражений.</li>
@@ -101,7 +101,7 @@ calculated exactly.</p>
 <h3>What is in the game</h3>
 <ul>
 <li>Podkidnoy (throw-in) and perevodnoy (passing) Durak, a 36-card deck, two to four players.</li>
-<li>Nine opponents with characters of their own and five levels of strength, from beginner to
+<li>Seventeen opponents with characters of their own and five levels of strength, from beginner to
 master; each one's level can be set separately.</li>
 <li>Portraits, table talk and Russian voice lines, all optional.</li>
 <li>A hint for the move, a view of the discard pile, a tally of wins and losses.</li>
@@ -155,7 +155,7 @@ souviennent de qui a ramassé quoi et calculent plusieurs coups à l’avance. Q
 <ul>
 <li>Dourak podkidnoï (où l’on ajoute des cartes) et perevodnoï (où l’on transfère l’attaque), jeu
 de 36 cartes, de deux à quatre joueurs.</li>
-<li>Neuf adversaires qui ont chacun leur caractère et cinq niveaux de force, du débutant au
+<li>Dix-sept adversaires qui ont chacun leur caractère et cinq niveaux de force, du débutant au
 maître ; le niveau de chacun se règle séparément.</li>
 <li>Portraits, remarques à table et voix (en russe) : tout est facultatif.</li>
 <li>Un conseil pour le coup à jouer, la vue de la défausse, le décompte des victoires et des

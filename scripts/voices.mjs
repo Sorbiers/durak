@@ -22,7 +22,7 @@
 //   tools/piper/venv/Scripts/python -m piper.download_voices --data-dir tools/piper/voices \
 //     ru_RU-denis-medium ru_RU-dmitri-medium ru_RU-irina-medium ru_RU-ruslan-medium
 //
-// Output: public/durak/voices/<character>/ru/<name>.mp3 and public/durak/voices/index.json.
+// Output: public/voices/<character>/ru/<name>.mp3 and public/voices/index.json.
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -33,7 +33,7 @@ import { clipName, linesFor } from '../src/ui/phrases.ts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
-const OUT = join(ROOT, 'public', 'durak', 'voices');
+const OUT = join(ROOT, 'public', 'voices');
 const LANG = 'ru';
 const venvPython = (dir) => join(dir, 'venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
 
@@ -63,6 +63,14 @@ const SILERO_CAST = {
   fyodor: { speaker: 'eugene', pitch: 'low', tempo: 0.97 }, // a low grumble
   lyuba: { speaker: 'baya', pitch: 'medium', tempo: 1.05 }, // bright and quick
   kostya: { speaker: 'aidar', pitch: 'x-high', tempo: 1.08 }, // a teenager
+  koshchei: { speaker: 'aidar', pitch: 'x-low', tempo: 0.88 }, // dry, ancient, in no hurry
+  yaga: { speaker: 'xenia', pitch: 'x-low', tempo: 0.92 }, // an old woman's creak
+  fagot: { speaker: 'eugene', pitch: 'x-high', tempo: 1.1 }, // a high, cracked patter
+  begemot: { speaker: 'eugene', pitch: 'x-low', tempo: 0.94 }, // plump and pompous
+  azazello: { speaker: 'eugene', pitch: 'low', tempo: 1.08 }, // flat and curt
+  matroskin: { speaker: 'aidar', pitch: 'high', tempo: 0.96 }, // soft and reasonable
+  kikimora: { speaker: 'kseniya', pitch: 'high', tempo: 1.04 }, // a thin, teasing voice
+  satyr: { speaker: 'aidar', pitch: 'high', tempo: 1.1 }, // quick and merry
 };
 // The text is prepared the way the Gogol project prepares its own (rut2s.js): stress is
 // marked with a plus sign before the stressed vowel, taken from Gogol's dictionary of 900,000
@@ -76,14 +84,24 @@ const STRESS = {
   уже: 'уж+е', учитесь: 'уч+итесь', простоты: 'простот+ы', головы: 'голов+ы', смело: 'см+ело',
   дома: 'д+ома', собрались: 'собрал+ись', урок: 'ур+ок', личного: 'л+ичного',
   допустим: 'доп+устим', пропадать: 'пропад+ать', правилам: 'пр+авилам',
+  вина: 'вин+а', грусти: 'груст+и', дела: 'дел+а', долгу: 'д+олгу', души: 'душ+и',
+  задом: 'з+адом', закусите: 'закус+ите', кости: 'к+ости', кругом: 'круг+ом', лесу: 'л+есу',
+  молча: 'м+олча', никого: 'никог+о', подменены: 'подменен+ы', полезай: 'полез+ай',
+  помочь: 'пом+очь', пора: 'пор+а', потом: 'пот+ом', приму: 'прим+у', приходите: 'прих+одите',
+  сдано: 'сд+ано', сердца: 'с+ердца', слабо: 'сл+або', стоят: 'ст+оят', тому: 'том+у',
   // not in the dictionary
   отбито: 'отб+ито', предсказуемо: 'предсказ+уемо', потрачен: 'потр+ачен',
+  ага: 'аг+а', бережливее: 'бережл+ивее', буду: 'б+уду', вами: 'в+ами', велено: 'в+елено',
+  диониса: 'Дион+иса', доена: 'д+оена', дровишек: 'дров+ишек', мессир: 'месс+ир',
+  мессиру: 'месс+иру', побито: 'поб+ито', пожирнее: 'пожирн+ее', покорнейше: 'пок+орнейше',
+  тинки: 'т+инки', фагот: 'фаг+от', шельмец: 'шельм+ец',
   планировалось: 'планир+овалось', сыграна: 'с+ыграна', кого: 'ког+о', добора: 'доб+ора',
   эндшпиль: '+эндшпиль', прикуп: 'пр+икуп', будешь: 'б+удешь', довесочек: 'дов+есочек',
   переадресован: 'переадрес+ован', неуд: 'н+еуд', сработано: 'сраб+отано', ними: 'н+ими',
   гостинчик: 'гост+инчик', опа: '+опа', вау: 'в+ау', стариковски: 'старик+овски',
   // wrong in the dictionary for the sense used here
   сочи: 'с+очи', // the town
+  молодец: 'м+олодец', // the hero of a fairy tale
 };
 const VOWELS = /[аеёиоуыэюя]/i;
 let dictionary;
@@ -172,6 +190,14 @@ const PIPER_CAST = {
   fyodor: { voice: 'denis', pitch: 0.96, pace: 1.04 },
   lyuba: { voice: 'irina', pitch: 1.07, pace: 0.95 },
   kostya: { voice: 'ruslan', pitch: 1.11, pace: 0.93 },
+  koshchei: { voice: 'denis', pitch: 0.9, pace: 1.16 },
+  yaga: { voice: 'irina', pitch: 0.9, pace: 1.1 },
+  fagot: { voice: 'dmitri', pitch: 1.1, pace: 0.9 },
+  begemot: { voice: 'ruslan', pitch: 0.9, pace: 1.04 },
+  azazello: { voice: 'denis', pitch: 1.0, pace: 0.94 },
+  matroskin: { voice: 'dmitri', pitch: 0.94, pace: 1.04 },
+  kikimora: { voice: 'irina', pitch: 1.1, pace: 0.97 },
+  satyr: { voice: 'ruslan', pitch: 1.05, pace: 0.9 },
 };
 // Piper guesses the stress from plain text. Where it guesses wrong, the word is given with
 // an accent on the stressed vowel, which it obeys.

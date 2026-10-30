@@ -19,7 +19,8 @@ export interface Character {
   rating: Rating;
   female: boolean; // for choosing a voice
   pitch: number; // voice pitch, 0..2, to tell the speakers apart
-  // Which of the nine pictures (0..8, row by row on the original sheet) shows each mood.
+  // Which of the nine pictures (0..8, row by row on the original sheet, or in mood order where
+  // they were chosen from several sheets) shows each mood.
   moods: Record<Mood, number>;
 }
 
@@ -53,6 +54,33 @@ export const CHARACTERS: Character[] = [
     moods: { neutral: 3, thinking: 0, pleased: 3, happy: 6, surprised: 4, sad: 7, angry: 8, worried: 2 },
   },
   {
+    id: 'koshchei',
+    name: { ru: 'Кощей', en: 'Koshchei', fr: 'Kochtcheï' },
+    style: 'real',
+    rating: 4,
+    female: false,
+    pitch: 0.5,
+    moods: { neutral: 0, thinking: 1, pleased: 2, happy: 3, surprised: 4, sad: 5, angry: 6, worried: 7 },
+  },
+  {
+    id: 'yaga',
+    name: { ru: 'Яга', en: 'Yaga', fr: 'Yaga' },
+    style: 'real',
+    rating: 4,
+    female: true,
+    pitch: 0.75,
+    moods: { neutral: 0, thinking: 1, pleased: 2, happy: 3, surprised: 4, sad: 5, angry: 6, worried: 7 },
+  },
+  {
+    id: 'fagot',
+    name: { ru: 'Фагот', en: 'Koroviev', fr: 'Fagot' },
+    style: 'real',
+    rating: 4,
+    female: false,
+    pitch: 1.4,
+    moods: { neutral: 0, thinking: 1, pleased: 2, happy: 4, surprised: 6, sad: 8, angry: 3, worried: 5 },
+  },
+  {
     id: 'gleb',
     name: { ru: 'Глеб', en: 'Gleb', fr: 'Gleb' },
     style: 'real',
@@ -80,6 +108,33 @@ export const CHARACTERS: Character[] = [
     moods: { neutral: 0, thinking: 7, pleased: 3, happy: 6, surprised: 4, sad: 5, angry: 8, worried: 1 },
   },
   {
+    id: 'begemot',
+    name: { ru: 'Бегемот', en: 'Begemot', fr: 'Béhémoth' },
+    style: 'real',
+    rating: 3,
+    female: false,
+    pitch: 0.65,
+    moods: { neutral: 8, thinking: 1, pleased: 4, happy: 0, surprised: 3, sad: 6, angry: 7, worried: 5 },
+  },
+  {
+    id: 'azazello',
+    name: { ru: 'Азазелло', en: 'Azazello', fr: 'Azazello' },
+    style: 'real',
+    rating: 3,
+    female: false,
+    pitch: 0.8,
+    moods: { neutral: 5, thinking: 0, pleased: 1, happy: 8, surprised: 4, sad: 6, angry: 2, worried: 7 },
+  },
+  {
+    id: 'matroskin',
+    name: { ru: 'Матроскин', en: 'Matroskin', fr: 'Matroskine' },
+    style: 'real',
+    rating: 3,
+    female: false,
+    pitch: 0.9,
+    moods: { neutral: 0, thinking: 3, pleased: 5, happy: 8, surprised: 4, sad: 6, angry: 7, worried: 2 },
+  },
+  {
     id: 'fyodor',
     name: { ru: 'Фёдор', en: 'Fyodor', fr: 'Fiodor' },
     style: 'cartoon',
@@ -98,6 +153,15 @@ export const CHARACTERS: Character[] = [
     moods: { neutral: 0, thinking: 2, pleased: 3, happy: 6, surprised: 4, sad: 5, angry: 8, worried: 7 },
   },
   {
+    id: 'kikimora',
+    name: { ru: 'Кикимора', en: 'Kikimora', fr: 'Kikimora' },
+    style: 'real',
+    rating: 2,
+    female: true,
+    pitch: 1.25,
+    moods: { neutral: 0, thinking: 1, pleased: 2, happy: 3, surprised: 4, sad: 5, angry: 6, worried: 7 },
+  },
+  {
     id: 'kostya',
     name: { ru: 'Костя', en: 'Kostya', fr: 'Kostia' },
     style: 'cartoon',
@@ -105,6 +169,15 @@ export const CHARACTERS: Character[] = [
     female: false,
     pitch: 1.3,
     moods: { neutral: 0, thinking: 2, pleased: 3, happy: 1, surprised: 4, sad: 5, angry: 8, worried: 7 },
+  },
+  {
+    id: 'satyr',
+    name: { ru: 'Сатир', en: 'Satyr', fr: 'Satyre' },
+    style: 'real',
+    rating: 1,
+    female: false,
+    pitch: 1.15,
+    moods: { neutral: 4, thinking: 2, pleased: 0, happy: 3, surprised: 6, sad: 5, angry: 1, worried: 8 },
   },
 ];
 

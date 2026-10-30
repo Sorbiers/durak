@@ -6,7 +6,7 @@ Play it at https://podkidnoy.online/.
 ![The table in a four-player game: three opponents with portraits, two cards to beat, the discard pile, and the playable cards of the hand picked out](docs/screenshot.jpg)
 
 - Подкидной and переводной, 36 cards, 2 to 4 players.
-- Nine named opponents in two styles of portrait, realistic and caricature, each with a skill
+- Seventeen named opponents in two styles of portrait, realistic and caricature, each with a skill
   rating from one to five stars. Pick one to three of them by face or by strength.
 - Optional portraits that react to the game, remarks in each character's own voice, and
   reading the remarks aloud.
@@ -97,8 +97,9 @@ which picture shows which mood, is `src/ui/characters.ts`; the remarks are in
 `src/ui/phrases.ts`.
 
 Portraits live in `public/avatars/<id>/0.webp` to `8.webp`: nine expressions per character,
-cut from a three-by-three sheet. To add or replace a character, cut a new sheet the same way
-and add an entry to the roster.
+cut from a three-by-three sheet, or the best nine where there were several sheets. To add or
+replace a character, cut a new sheet the same way and add an entry to the roster, with the
+character's casting in `scripts/voices.mjs`.
 
 Russian remarks are spoken from clips in `public/voices/`, recorded ahead of time by a free
 speech engine running locally. `npm run voices` records whatever is missing after lines are
