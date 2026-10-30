@@ -2,7 +2,7 @@
 setlocal
 rem ---------------------------------------------------------------------------
 rem Windows wrapper for deploy.sh - builds the game and publishes it to the VPS
-rem (nginx, https://synarteum.com). Runs through Git Bash (ssh/scp/tar).
+rem (nginx, https://podkidnoy.online). Runs through Git Bash (ssh/scp/tar).
 rem
 rem Usage (from a terminal in the repo root):
 rem   deploy.bat

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Build the game and publish it to the VPS as a static site under nginx.
 #
-# First run creates /opt/durak/web and installs the nginx site for synarteum.com; later runs
+# First run creates /opt/podkidnoy/web and installs the nginx site for podkidnoy.online; later runs
 # just replace the files. The nginx conf is installed only while the live copy has no TLS,
 # so certbot's edits are never overwritten. For HTTPS, once DNS points at the server:
-#   sudo certbot --nginx -d synarteum.com -d www.synarteum.com
+#   sudo certbot --nginx -d podkidnoy.online -d www.podkidnoy.online
 #
 # Usage (from the repo root, e.g. Git Bash on Windows):  ./deploy.sh
 # Where to deploy is read from deploy.env beside this script (not committed; copy
@@ -22,7 +22,7 @@ fi
 HOST="$DURAK_HOST"
 KEY="$DURAK_KEY"
 PORT="${DURAK_PORT:-22}"
-REMOTE="${DURAK_REMOTE:-/opt/durak}"
+REMOTE="${DURAK_REMOTE:-/opt/podkidnoy}"
 SSH="ssh -p $PORT -i $KEY -o StrictHostKeyChecking=accept-new"
 SCP="scp -P $PORT -i $KEY -o StrictHostKeyChecking=accept-new"
 
@@ -40,7 +40,7 @@ npm run build
 
 TAR="$(mktemp).tgz"
 trap 'rm -f "$TAR"' EXIT
-tar czf "$TAR" -C dist . -C ../deploy synarteum.conf
+tar czf "$TAR" -C dist . -C ../deploy podkidnoy.conf
 echo "Size: $(du -h "$TAR" | cut -f1)"
 
 echo "Uploading to $HOST ..."
@@ -53,7 +53,7 @@ $SSH "$HOST" "set -e
   sudo mkdir -p $REMOTE/web.new
   sudo tar xzf /tmp/durak_web.tgz -C $REMOTE/web.new
   rm -f /tmp/durak_web.tgz
-  sudo mv $REMOTE/web.new/synarteum.conf $REMOTE/synarteum.conf
+  sudo mv $REMOTE/web.new/podkidnoy.conf $REMOTE/podkidnoy.conf
   sudo chown -R root:root $REMOTE
   sudo chmod -R a+rX $REMOTE
   sudo rm -rf $REMOTE/web.old
@@ -62,8 +62,8 @@ $SSH "$HOST" "set -e
   sudo rm -rf $REMOTE/web.old
 
   # install the site conf, but never clobber certbot's TLS edits once present
-  if ! grep -q letsencrypt /etc/nginx/conf.d/synarteum.conf 2>/dev/null; then
-    sudo cp $REMOTE/synarteum.conf /etc/nginx/conf.d/synarteum.conf
+  if ! grep -q letsencrypt /etc/nginx/conf.d/podkidnoy.conf 2>/dev/null; then
+    sudo cp $REMOTE/podkidnoy.conf /etc/nginx/conf.d/podkidnoy.conf
   else
     echo 'nginx conf has TLS - leaving it as-is'
   fi
@@ -73,7 +73,11 @@ $SSH "$HOST" "set -e
   sleep 2   # the reload is not instant; checking at once would hit the old workers
   echo -n 'nginx: '; systemctl is-active nginx
   # ask this server itself for the site, following the redirect to HTTPS when there is one
-  echo -n 'site:  '; curl -fsSL -o /dev/null -w '%{http_code}\n' --resolve synarteum.com:80:127.0.0.1 --resolve synarteum.com:443:127.0.0.1 http://synarteum.com/ || echo FAILED"
+  echo -n 'site:  '; curl -fsSL -o /dev/null -w '%{http_code}\n' --resolve podkidnoy.online:80:127.0.0.1 --resolve podkidnoy.online:443:127.0.0.1 http://podkidnoy.online/ || echo FAILED"
 
 echo
-echo "Done: https://synarteum.com/"
+echo "Pinging IndexNow ..."
+bash scripts/indexnow.sh || echo "IndexNow ping failed (non-fatal)"
+
+echo
+echo "Done: https://podkidnoy.online/"

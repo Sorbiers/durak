@@ -3,9 +3,9 @@
 // is built, so that it can be read without running any script; the pages' scripts use the
 // same texts when the language is switched.
 
-export const SITE = 'https://synarteum.com/';
-/** The game's folder on the site. */
-export const GAME = `${SITE}durak/`;
+export const SITE = 'https://podkidnoy.online/';
+/** The game is served at the site root. */
+export const GAME = SITE;
 export const REPO = 'https://github.com/Sorbiers/durak';
 
 export type PageLang = 'ru' | 'en' | 'fr';
@@ -27,12 +27,12 @@ export interface PageText {
 
 export const PAGES: Record<PageLang, PageText> = {
   ru: {
-    title: 'Дурак онлайн — подкидной и переводной против сильного компьютера',
+    title: 'Подкидной дурак онлайн — играть бесплатно против сильного компьютера',
     description:
-      'Дурак онлайн бесплатно и без регистрации: подкидной и переводной, 2–4 игрока, 36 карт. ' +
-      'Сильный честный компьютер: он не видит ваши карты и не знает порядок колоды.',
+      'Подкидной дурак онлайн бесплатно и без регистрации: подкидной и переводной, 2–4 игрока, ' +
+      '36 карт. Сильный честный компьютер: он не видит ваши карты и не знает порядок колоды.',
     about: `
-<h2>Дурак онлайн</h2>
+<h2>Подкидной дурак онлайн</h2>
 <p>«Дурак» — самая известная русская карточная игра. В ней нет победителя: проигрывает тот, кто
 последним остался с картами на руках, — он и есть дурак. Игроки по очереди ходят друг под друга;
 отбивающийся должен побить каждую карту старшей картой той же масти или козырем, а если не может
@@ -74,17 +74,18 @@ export const PAGES: Record<PageLang, PageText> = {
 дурака нет: ничья.</li>
 </ul>
 
-<p class="fine">Игра — один из залов <a href="${SITE}ru/">SynArteum</a>, музея синтетического
+<p class="fine">Игра — один из залов <a href="https://podkidnoy.online/">SynArteum</a>, музея синтетического
 искусства. Исходный код открыт, лицензия MIT:
 <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
   },
   en: {
-    title: 'Durak online — play the Russian card game against a strong computer',
+    title: 'Podkidnoy Durak online — play the Russian card game against a strong computer',
     description:
-      'Play Durak, the classic Russian card game, free in your browser. 2–4 players, 36 cards, ' +
-      'throw-in and passing variants. A strong, fair computer that never sees your hand or the deck.',
+      'Play Podkidnoy Durak online, the classic Russian card game, free in your browser. 2–4 ' +
+      'players, 36 cards, throw-in (podkidnoy) and passing (perevodnoy) variants. A strong, fair ' +
+      'computer that never sees your hand or the deck.',
     about: `
-<h2>Durak online</h2>
+<h2>Podkidnoy Durak online</h2>
 <p>Durak (“the fool”) is the best-known Russian card game. Nobody wins it: the one player left
 holding cards at the end loses and is the fool. Players take turns to attack the player on
 their left; the defender must beat every card with a higher card of the same suit or with a
@@ -127,12 +128,12 @@ led, and the defender last.</li>
 defender's last card, there is no fool: it is a draw.</li>
 </ul>
 
-<p class="fine">The game is one of the halls of <a href="${SITE}en/">SynArteum</a>, a museum of
+<p class="fine">The game is one of the halls of <a href="https://podkidnoy.online/">SynArteum</a>, a museum of
 synthetic art. The source is open under the MIT licence:
 <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
   },
   fr: {
-    title: 'Dourak en ligne — le jeu de cartes russe contre un ordinateur fort',
+    title: 'Dourak (podkidnoï) en ligne — le jeu de cartes russe contre un ordinateur fort',
     description:
       'Jouez au dourak, le classique russe, gratuitement dans le navigateur : 2 à 4 joueurs, 36 cartes. ' +
       'Un ordinateur fort et loyal, qui ne voit ni votre main ni le talon.',
@@ -182,91 +183,8 @@ commençant par celui qui a ouvert, le défenseur en dernier.</li>
 dernière carte du défenseur, il n’y a pas de dourak : partie nulle.</li>
 </ul>
 
-<p class="fine">Le jeu est l’une des salles de <a href="${SITE}fr/">SynArteum</a>, un musée d’art
+<p class="fine">Le jeu est l’une des salles de <a href="https://podkidnoy.online/">SynArteum</a>, un musée d’art
 synthétique. Le code source est ouvert, sous licence MIT :
 <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
-  },
-};
-
-/** Where the front page's halls lead. The first is the game, on this site. */
-export const DREAM = 'https://wishmedream.com/';
-export const COFFEE = 'https://wishmecoffee.com/';
-
-/**
- * The front page: SynArteum, a SYNthetic ART musEUM with three halls. The keys are the names
- * of the slots in the page; `title` and `description` go into its head.
- */
-export const LANDING: Record<PageLang, Record<string, string>> = {
-  ru: {
-    title: 'SynArteum — музей синтетического искусства',
-    description:
-      'SynArteum — музей синтетического искусства. Три зала: карточная игра «Дурак» с сильным и ' +
-      'честным компьютером, галерея снов Wish Me A Dream и кафе Wish Me Coffee.',
-    museum: 'Музей синтетического искусства',
-    lead: 'Три зала, где нейросети играют в карты, видят сны и варят кофе.',
-    hall: 'Зал',
-    exhibit: 'Экспонат',
-    neurons: 'нейронов',
-    k1: 'Синтетическая карточная игра',
-    n1: 'Дурак',
-    t1: 'Подкидной и переводной против соперников, которые считают карты, но не подглядывают. Пять уровней силы, девять характеров.',
-    c1: 'Сесть за стол',
-    k2: 'Синтетическая галерея',
-    n2: 'Wish Me A Dream',
-    t2: 'Тихая лента видений, приснившихся нейросети: сюрреалистическое барокко, по одной картине за раз.',
-    c2: 'Войти в галерею',
-    k3: 'Синтетическое кафе',
-    n3: 'Wish Me Coffee',
-    t3: 'Нарисованная чашка кофе с добрым пожеланием: утром, днём и на ночь. В Телеграме и в браузере.',
-    c3: 'Заказать чашку',
-    foot: 'Сделано человеком и нейросетями',
-  },
-  en: {
-    title: 'SynArteum — a museum of synthetic art',
-    description:
-      'SynArteum is a museum of synthetic art with three halls: the card game Durak against a ' +
-      'strong, fair computer, the dream gallery Wish Me A Dream and the café Wish Me Coffee.',
-    museum: 'Synthetic art museum',
-    lead: 'Three halls where neural networks play cards, dream in pictures and pour coffee.',
-    hall: 'Hall',
-    exhibit: 'Exhibit',
-    neurons: 'neurons',
-    k1: 'Synthetic card game',
-    n1: 'Durak',
-    t1: 'The Russian classic against opponents who count cards but never peek. Five levels of strength, nine characters.',
-    c1: 'Take a seat',
-    k2: 'Synthetic art gallery',
-    n2: 'Wish Me A Dream',
-    t2: 'A quiet feed of visions dreamt by a neural network: surreal baroque art, one image at a time.',
-    c2: 'Enter the gallery',
-    k3: 'Synthetic café',
-    n3: 'Wish Me Coffee',
-    t3: 'An illustrated cup of coffee with a heartfelt wish, matched to your time of day. On Telegram and in the browser.',
-    c3: 'Order a cup',
-    foot: 'Made by a human and neural networks',
-  },
-  fr: {
-    title: 'SynArteum — un musée d’art synthétique',
-    description:
-      'SynArteum est un musée d’art synthétique en trois salles : le jeu de cartes Dourak contre un ' +
-      'ordinateur fort et loyal, la galerie de rêves Wish Me A Dream et le café Wish Me Coffee.',
-    museum: 'Musée d’art synthétique',
-    lead: 'Trois salles où des réseaux de neurones jouent aux cartes, rêvent en images et servent le café.',
-    hall: 'Salle',
-    exhibit: 'Pièce',
-    neurons: 'neurones',
-    k1: 'Jeu de cartes synthétique',
-    n1: 'Dourak',
-    t1: 'Le classique russe contre des adversaires qui comptent les cartes mais ne trichent jamais. Cinq niveaux de force, neuf personnages.',
-    c1: 'Prendre place',
-    k2: 'Galerie d’art synthétique',
-    n2: 'Wish Me A Dream',
-    t2: 'Un fil paisible de visions rêvées par un réseau de neurones : un baroque surréaliste, une image à la fois.',
-    c2: 'Entrer dans la galerie',
-    k3: 'Café synthétique',
-    n3: 'Wish Me Coffee',
-    t3: 'Une tasse de café illustrée et un vœu sincère, selon l’heure de votre journée. Sur Telegram et dans le navigateur.',
-    c3: 'Commander une tasse',
-    foot: 'Fait par un humain et des réseaux de neurones',
   },
 };

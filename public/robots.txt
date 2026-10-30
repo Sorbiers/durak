@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
-Disallow: /durak/voices/
+Disallow: /voices/
 
-Sitemap: https://synarteum.com/sitemap.xml
+Sitemap: https://podkidnoy.online/sitemap.xml

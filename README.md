@@ -1,7 +1,7 @@
 # Дурак
 
 A trainer for the card game Durak: you against one to three computer players, in the browser.
-Play it at https://synarteum.com/durak/.
+Play it at https://podkidnoy.online/.
 
 ![The table in a four-player game: three opponents with portraits, two cards to beat, the discard pile, and the playable cards of the hand picked out](docs/screenshot.jpg)
 
