@@ -15,13 +15,16 @@ export type Mood =
 export interface Character {
   id: string; // also the folder under public/durak/avatars
   name: Record<Lang, string>;
-  style: 'real' | 'cartoon';
+  style: 'real' | 'cartoon' | 'fable';
   rating: Rating;
   female: boolean; // for choosing a voice
   pitch: number; // voice pitch, 0..2, to tell the speakers apart
   // Which of the nine pictures (0..8, row by row on the original sheet, or in mood order where
   // they were chosen from several sheets) shows each mood.
   moods: Record<Mood, number>;
+  // A short film of them, as a sheet of square frames, row by row, in clip.webp beside the
+  // pictures. It starts and ends on their neutral picture.
+  clip?: { frames: number; columns: number; fps: number };
 }
 
 // Ordered from the strongest down. Boris is the only one at the top rating.
@@ -56,7 +59,7 @@ export const CHARACTERS: Character[] = [
   {
     id: 'koshchei',
     name: { ru: 'Кощей', en: 'Koshchei', fr: 'Kochtcheï' },
-    style: 'real',
+    style: 'fable',
     rating: 4,
     female: false,
     pitch: 0.5,
@@ -65,7 +68,7 @@ export const CHARACTERS: Character[] = [
   {
     id: 'yaga',
     name: { ru: 'Яга', en: 'Yaga', fr: 'Yaga' },
-    style: 'real',
+    style: 'fable',
     rating: 4,
     female: true,
     pitch: 0.75,
@@ -74,7 +77,7 @@ export const CHARACTERS: Character[] = [
   {
     id: 'fagot',
     name: { ru: 'Фагот', en: 'Koroviev', fr: 'Fagot' },
-    style: 'real',
+    style: 'fable',
     rating: 4,
     female: false,
     pitch: 1.4,
@@ -110,7 +113,7 @@ export const CHARACTERS: Character[] = [
   {
     id: 'begemot',
     name: { ru: 'Бегемот', en: 'Begemot', fr: 'Béhémoth' },
-    style: 'real',
+    style: 'fable',
     rating: 3,
     female: false,
     pitch: 0.65,
@@ -119,7 +122,7 @@ export const CHARACTERS: Character[] = [
   {
     id: 'azazello',
     name: { ru: 'Азазелло', en: 'Azazello', fr: 'Azazello' },
-    style: 'real',
+    style: 'fable',
     rating: 3,
     female: false,
     pitch: 0.8,
@@ -128,7 +131,7 @@ export const CHARACTERS: Character[] = [
   {
     id: 'matroskin',
     name: { ru: 'Матроскин', en: 'Matroskin', fr: 'Matroskine' },
-    style: 'real',
+    style: 'fable',
     rating: 3,
     female: false,
     pitch: 0.9,
@@ -155,7 +158,7 @@ export const CHARACTERS: Character[] = [
   {
     id: 'kikimora',
     name: { ru: 'Кикимора', en: 'Kikimora', fr: 'Kikimora' },
-    style: 'real',
+    style: 'fable',
     rating: 2,
     female: true,
     pitch: 1.25,
@@ -173,11 +176,12 @@ export const CHARACTERS: Character[] = [
   {
     id: 'satyr',
     name: { ru: 'Сатир', en: 'Satyr', fr: 'Satyre' },
-    style: 'real',
+    style: 'fable',
     rating: 1,
     female: false,
     pitch: 1.15,
     moods: { neutral: 4, thinking: 2, pleased: 0, happy: 3, surprised: 6, sad: 5, angry: 1, worried: 8 },
+    clip: { frames: 120, columns: 8, fps: 12 },
   },
 ];
 
@@ -186,6 +190,8 @@ export const characterById = (id: string): Character =>
 
 export const avatarUrl = (c: Character, mood: Mood): string =>
   `${ROOT}avatars/${c.id}/${c.moods[mood]}.webp`;
+
+export const clipUrl = (c: Character): string => `${ROOT}avatars/${c.id}/clip.webp`;
 
 /** Fetches a character's pictures ahead of time so a change of mood does not flicker. */
 export function preloadAvatars(c: Character): void {

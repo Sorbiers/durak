@@ -23,6 +23,7 @@ import { cryptoRng } from '../engine/rng';
 import { PAGES, otherLangs } from '../seo';
 import { AiClient } from './aiClient';
 import { CHARACTERS, Character, Mood, avatarUrl, characterById, preloadAvatars } from './characters';
+import { playClip } from './clip';
 import { Lang, STRINGS, Strings, fill } from './i18n';
 import { Geometry, Place, computeLayout } from './layout';
 import { REMARK_CHANCE, Remark, plainRemark, remark } from './phrases';
@@ -223,7 +224,9 @@ export function startApp(): void {
   let fanEnds: number[] = []; // right edge of each opponent's cards, as last laid out
   // What each seat's face shows for the moment, in "react to the game" mode.
   let moods: { mood: Mood; until: number }[] = [];
-  let lastNudge = 0; // when an opponent last remarked on the player taking their time
+  let lastNudge = -Infinity; // when an opponent last remarked on the player taking their time
+  let clipSeat = -1; // the seat whose portrait is playing its clip
+  let stopClip = (): void => {};
 
   const cardEls: HTMLElement[] = [];
   for (let c = 0; c < DECK_SIZE; c++) {
@@ -470,6 +473,7 @@ export function startApp(): void {
       if (waiting.length === 0) return;
       lastNudge = now;
       react(waiting[(Math.random() * waiting.length) | 0], 'waiting');
+      for (const seat of waiting) startClip(seat);
     }, 40_000);
   }
 
@@ -810,6 +814,25 @@ export function startApp(): void {
     return moods[seat].until > performance.now() ? moods[seat].mood : 'neutral';
   };
 
+  /** A portrait may play its clip while it moves with the game and the seat has nothing to do. */
+  const clipAllowed = (seat: number): boolean =>
+    settings.portraits &&
+    settings.avatars === 'context' &&
+    game.phase !== OVER &&
+    game.turn !== seat &&
+    !matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function startClip(seat: number): void {
+    const c = who(seat);
+    if (!c.clip || clipSeat >= 0 || !clipAllowed(seat)) return;
+    clipSeat = seat;
+    stopClip = playClip(avatarEls[seat]!, c, () => {
+      if (clipSeat !== seat) return; // the seats have been rebuilt
+      clipSeat = -1;
+      renderSeats();
+    });
+  }
+
   /**
    * A computer player responds to something: its face changes and it may say a line.
    * With remarks switched off only the bare announcements of an action remain.
@@ -879,6 +902,8 @@ export function startApp(): void {
   }
 
   function buildSeats(): void {
+    clipSeat = -1;
+    stopClip();
     seatsLayer.innerHTML = '';
     seatEls = [];
     avatarEls = [];
@@ -892,6 +917,10 @@ export function startApp(): void {
         avatar.className = 'avatar';
         avatar.alt = '';
         avatar.draggable = false;
+        if (who(p).clip) {
+          avatar.classList.add('has-clip');
+          avatar.addEventListener('mouseenter', () => startClip(p));
+        }
         seatsLayer.appendChild(avatar);
         role = document.createElement('div');
         role.className = 'role-chip';
@@ -1017,6 +1046,7 @@ export function startApp(): void {
 
   function renderSeats(): void {
     const over = game.phase === OVER;
+    if (clipSeat >= 0 && !clipAllowed(clipSeat)) stopClip();
     for (let p = 0; p < seatEls.length; p++) {
       const el = seatEls[p];
       const at = geo.seats[p];
@@ -1031,8 +1061,10 @@ export function startApp(): void {
           avatar.style.left = `${spot.x - spot.size / 2}px`;
           avatar.style.top = `${spot.y - spot.size / 2}px`;
           avatar.style.width = avatar.style.height = `${spot.size}px`;
-          const src = avatarUrl(who(p), moodOf(p));
-          if (avatar.getAttribute('src') !== src) avatar.src = src;
+          if (clipSeat !== p) {
+            const src = avatarUrl(who(p), moodOf(p));
+            if (avatar.getAttribute('src') !== src) avatar.src = src;
+          }
           avatar.classList.toggle('active', !over && game.turn === p);
           avatar.classList.toggle('out', out && !over); // at the end everyone is shown in full
           avatar.classList.toggle('fool', over && game.loser === p);
@@ -1278,10 +1310,11 @@ export function startApp(): void {
 
     // Opponents are picked from the roster, by face or by the stars that show their strength.
     // The order of picking is the order of seating, clockwise from the player's left.
+    // The roster opens on the group of whoever sits first.
     let picked = [...settings.opponents];
-    let shown: 'all' | Character['style'] = 'all';
+    let shown = characterById(picked[0]).style;
     const roster = (): string =>
-      CHARACTERS.filter((c) => shown === 'all' || c.style === shown)
+      CHARACTERS.filter((c) => c.style === shown)
         .map((c) => {
           const order = picked.indexOf(c.id);
           const rating = ratingOf(c);
@@ -1320,7 +1353,7 @@ export function startApp(): void {
       check('firstBoutFive', t.setFive, settings.firstBoutFive) +
       `</fieldset>` +
       `<fieldset class="group"><legend>${t.setOpponents}</legend>` +
-      seg('shown', [['all', t.all], ['real', t.realistic], ['cartoon', t.cartoon]], shown) +
+      seg('shown', [['real', t.realistic], ['cartoon', t.cartoon], ['fable', t.fable]], shown) +
       `<div class="roster"></div><p class="fine">${t.pickHint}</p>` +
       `</fieldset>` +
       `</div><div class="col">` +

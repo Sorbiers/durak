@@ -660,6 +660,10 @@ button.pile-label:disabled {
 .avatar[hidden] {
   display: none;
 }
+/* The rest of this layer lets the pointer through; a portrait with a clip plays it on hover. */
+.avatar.has-clip {
+  pointer-events: auto;
+}
 .avatar.active {
   box-shadow:
     0 0 0 3px var(--brass-bright),
@@ -1076,8 +1080,10 @@ dialog h2 {
     font-size: 13px;
   }
 }
+/* Options that do not fit go onto a second row, with a line above it. */
 .seg {
   display: flex;
+  flex-wrap: wrap;
   border: 1px solid rgba(216, 178, 106, 0.45);
   border-radius: 8px;
   overflow: hidden;
@@ -1098,6 +1104,7 @@ dialog h2 {
   cursor: pointer;
   color: var(--brass);
   font-size: 14px;
+  box-shadow: 0 -1px 0 rgba(216, 178, 106, 0.3);
 }
 .seg label + label span {
   border-left: 1px solid rgba(216, 178, 106, 0.3);
