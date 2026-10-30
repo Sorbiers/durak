@@ -74,8 +74,7 @@ export const PAGES: Record<PageLang, PageText> = {
 дурака нет: ничья.</li>
 </ul>
 
-<p class="fine">Игра — один из залов <a href="https://podkidnoy.online/">SynArteum</a>, музея синтетического
-искусства. Исходный код открыт, лицензия MIT:
+<p class="fine">Исходный код открыт, лицензия MIT:
 <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
   },
   en: {
@@ -128,8 +127,7 @@ led, and the defender last.</li>
 defender's last card, there is no fool: it is a draw.</li>
 </ul>
 
-<p class="fine">The game is one of the halls of <a href="https://podkidnoy.online/">SynArteum</a>, a museum of
-synthetic art. The source is open under the MIT licence:
+<p class="fine">The source is open under the MIT licence:
 <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
   },
   fr: {
@@ -183,8 +181,7 @@ commençant par celui qui a ouvert, le défenseur en dernier.</li>
 dernière carte du défenseur, il n’y a pas de dourak : partie nulle.</li>
 </ul>
 
-<p class="fine">Le jeu est l’une des salles de <a href="https://podkidnoy.online/">SynArteum</a>, un musée d’art
-synthétique. Le code source est ouvert, sous licence MIT :
+<p class="fine">Le code source est ouvert, sous licence MIT :
 <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
   },
 };
