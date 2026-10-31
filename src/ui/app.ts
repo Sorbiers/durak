@@ -1,37 +1,40 @@
 import { AiDecision, Rating, skillFor } from '../ai';
 import { Card, DECK_SIZE, SUIT_SYMBOLS, rankOf, suitOf } from '../engine/cards';
 import {
-  ATTACK,
-  DEFEND,
-  DRAW,
-  GameState,
-  OVER,
-  PASS,
-  PILE_ON,
-  TAKE,
-  applyAction,
-  cloneState,
-  decodeAction,
-  defendAction,
-  legalActions,
-  lowestTrump,
-  newGame,
-  openAction,
+    ATTACK,
+    DEFEND,
+    DRAW,
+    GameState,
+    OVER,
+    PASS,
+    PILE_ON,
+    TAKE,
+    applyAction,
+    cloneState,
+    decodeAction,
+    defendAction,
+    legalActions,
+    lowestTrump,
+    newGame,
+    openAction,
 } from '../engine/game';
 import { observe } from '../engine/observe';
 import { cryptoRng } from '../engine/rng';
 import { PAGES, otherLangs } from '../seo';
 import { AiClient } from './aiClient';
-import { CHARACTERS, Character, Mood, avatarUrl, characterById, preloadAvatars } from './characters';
+import { CHARACTERS, Character, Mood, characterById } from './characters';
 import { playClip } from './clip';
 import { Lang, STRINGS, Strings, fill } from './i18n';
 import { Geometry, Place, computeLayout } from './layout';
 import { REMARK_CHANCE, Remark, plainRemark, remark } from './phrases';
+import { pickPicture, portraitUrl, preloadAvatars } from './portraits';
 import { PAGE_LANG, ROOT, browserLang } from './root';
 import { audition, prepareVoices, releaseVoices, speak, stopSpeaking } from './speech';
 
 const HUMAN = 0;
 const BOT_PAUSE = 700; // a computer move is never shown sooner than this
+const SWAP_MS = 200; // how long one picture of a portrait takes to turn into the next
+const reducedMotion = (): boolean => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const COURT_LOW = 5; // jack
 const COURT_HIGH = 7; // king
 const PICTURE_NAMES = ['jack', 'queen', 'king', 'ace']; // ranks 5..8
@@ -224,6 +227,8 @@ export function startApp(): void {
   let fanEnds: number[] = []; // right edge of each opponent's cards, as last laid out
   // What each seat's face shows for the moment, in "react to the game" mode.
   let moods: { mood: Mood; until: number }[] = [];
+  // The mood each seat's picture is showing, and the picture it last showed for each mood.
+  let faces: { mood: Mood | null; shown: Partial<Record<Mood, string>> }[] = [];
   let lastNudge = -Infinity; // when an opponent last remarked on the player taking their time
   let clipSeat = -1; // the seat whose portrait is playing its clip
   let stopClip = (): void => {};
@@ -337,6 +342,7 @@ export function startApp(): void {
     resignArmed = false;
     resultEl.hidden = true;
     moods = Array.from({ length: n }, () => ({ mood: 'neutral' as Mood, until: 0 }));
+    faces = Array.from({ length: n }, () => ({ mood: null, shown: {} }));
     stopSpeaking();
     if (settings.speech) prepareVoices(settings.opponents.map(characterById), settings.lang);
     if (settings.portraits) settings.opponents.forEach((o) => preloadAvatars(characterById(o)));
@@ -814,23 +820,40 @@ export function startApp(): void {
     return moods[seat].until > performance.now() ? moods[seat].mood : 'neutral';
   };
 
+  /** A seat's picture for its mood: picked when the mood begins, and kept until it ends. */
+  function faceOf(seat: number): string {
+    const face = faces[seat]!;
+    const mood = moodOf(seat);
+    if (face.mood !== mood) {
+      face.mood = mood;
+      face.shown[mood] = pickPicture(who(seat), mood, face.shown[mood]);
+    }
+    return face.shown[mood]!;
+  }
+
   /** A portrait may play its clip while it moves with the game and the seat has nothing to do. */
   const clipAllowed = (seat: number): boolean =>
     settings.portraits &&
     settings.avatars === 'context' &&
     game.phase !== OVER &&
     game.turn !== seat &&
-    !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    !reducedMotion();
 
   function startClip(seat: number): void {
     const c = who(seat);
     if (!c.clip || clipSeat >= 0 || !clipAllowed(seat)) return;
     clipSeat = seat;
-    stopClip = playClip(avatarEls[seat]!, c, () => {
-      if (clipSeat !== seat) return; // the seats have been rebuilt
-      clipSeat = -1;
-      renderSeats();
-    });
+    const avatar = avatarEls[seat]!;
+    stopClip = playClip(
+      avatar,
+      c,
+      (src) => changePicture(avatar, src),
+      () => {
+        if (clipSeat !== seat) return; // the seats have been rebuilt
+        clipSeat = -1;
+        renderSeats();
+      },
+    );
   }
 
   /**
@@ -1044,6 +1067,18 @@ export function startApp(): void {
     list.scrollTop = list.scrollHeight;
   }
 
+  /** Changes a portrait's picture by dissolving, with the old picture left on top to fade away. */
+  function changePicture(avatar: HTMLImageElement, src: string): void {
+    if (avatar.hasAttribute('src') && !reducedMotion()) {
+      const old = avatar.cloneNode() as HTMLImageElement;
+      old.classList.add('fading');
+      avatar.after(old);
+      const fade = old.animate({ opacity: 0 }, { duration: SWAP_MS, easing: 'ease-in-out', fill: 'forwards' });
+      fade.onfinish = () => old.remove();
+    }
+    avatar.src = src;
+  }
+
   function renderSeats(): void {
     const over = game.phase === OVER;
     if (clipSeat >= 0 && !clipAllowed(clipSeat)) stopClip();
@@ -1062,8 +1097,8 @@ export function startApp(): void {
           avatar.style.top = `${spot.y - spot.size / 2}px`;
           avatar.style.width = avatar.style.height = `${spot.size}px`;
           if (clipSeat !== p) {
-            const src = avatarUrl(who(p), moodOf(p));
-            if (avatar.getAttribute('src') !== src) avatar.src = src;
+            const src = faceOf(p);
+            if (avatar.getAttribute('src') !== src) changePicture(avatar, src);
           }
           avatar.classList.toggle('active', !over && game.turn === p);
           avatar.classList.toggle('out', out && !over); // at the end everyone is shown in full
@@ -1329,7 +1364,7 @@ export function startApp(): void {
           return (
             `<div class="pick${order >= 0 ? ' on' : ''}" data-id="${c.id}">` +
             `<button type="button" class="face" aria-pressed="${order >= 0}">` +
-            (settings.portraits ? `<img src="${avatarUrl(c, 'neutral')}" alt="">` : '') +
+            (settings.portraits ? `<img src="${portraitUrl(c)}" alt="">` : '') +
             `<b>${c.name[settings.lang]}</b></button>` +
             `<span class="stars${usual}">${stars}</span>` +
             (settings.speech ? `<button type="button" class="hear" aria-label="${t.hear}" title="${t.hear}">▶</button>` : '') +

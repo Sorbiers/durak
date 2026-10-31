@@ -92,18 +92,22 @@ are games, the rating under test, players, transfer (0 or 1) and the opponents' 
 The rates are from two-player games of podkidnoy (2000 games for one and two stars, 240 for
 four and five). Each character has a usual rating, and Boris is the only one who is usually
 five stars; clicking a star in the roster sets any of them to any strength, and results are
-tallied separately for each strength. The roster, with names, usual ratings and
-which picture shows which mood, is `src/ui/characters.ts`; the remarks are in
-`src/ui/phrases.ts`.
+tallied separately for each strength. The roster, with names and usual ratings, is
+`src/ui/characters.ts`; the remarks are in `src/ui/phrases.ts`.
 
-Portraits live in `public/avatars/<id>/0.webp` to `8.webp`: nine expressions per character,
-cut from a three-by-three sheet, or the best nine where there were several sheets. To add or
-replace a character, cut a new sheet the same way and add an entry to the roster, with the
-character's casting in `scripts/voices.mjs`.
+Portraits live in `public/avatars/<id>/` as `<mood>_<N>.webp`, where the mood is neutral,
+thinking, pleased, happy, surprised, sad, angry or worried, and N is a digit from 0 to 9. A mood
+can have up to ten pictures, and the numbers may have gaps. Adding or removing a file is all it
+takes: the build reads the folders, and the dev server reloads the page. One picture is picked
+at random each time a mood begins, never the same one twice running. A mood with no pictures
+shows the neutral face, so every character needs at least one neutral picture, and the first of
+those stands for them in the roster. To add a character, make their folder, add an entry to the
+roster, and cast them in `scripts/voices.mjs`.
 
 A character may also have a short film, `clip.webp` beside the portraits, as a sheet of square
-frames declared in the roster. It plays, forward and then back, when the pointer goes over the
-portrait while that character has nothing to do, and when the player has been thinking for a
+frames declared in the roster. The portrait zooms in to the film's framing, the film plays
+forward and then back, and the portrait zooms out again. This happens when the pointer goes over
+the portrait while that character has nothing to do, and when the player has been thinking for a
 long time. Only the Satyr has one, and it is fetched only when first wanted. It does not play
 with the portraits set to stay still, or where the system asks for reduced motion.
 

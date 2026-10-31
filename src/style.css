@@ -679,6 +679,11 @@ button.pile-label:disabled {
     0 0 0 3px var(--cinnabar),
     0 6px 16px rgba(0, 0, 0, 0.45);
 }
+/* Over a portrait while its picture changes: the old picture fading away. */
+.avatar.fading {
+  box-shadow: none;
+  pointer-events: none;
+}
 
 /* ------------------------------------------------------------------ actions */
 

@@ -1,3 +1,4 @@
+import { readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 import { LANGS, PAGES, SITE, type PageLang, otherLangs } from './src/seo';
@@ -141,9 +142,46 @@ function pages(): Plugin {
 
 const at = (path: string): string => fileURLToPath(new URL(path, import.meta.url));
 
+// A page cannot list a folder, so which pictures each character has is read from their folders
+// here, <mood>_<0..9>.webp, and handed to the game as the module `virtual:portraits`. Adding or
+// removing a picture is all it takes, and the dev server reloads the page when that happens.
+function portraits(): Plugin {
+  const name = 'virtual:portraits';
+  const resolved = `\0${name}`;
+  const folder = at('./public/avatars');
+  return {
+    name: 'portraits',
+    resolveId: (id) => (id === name ? resolved : undefined),
+    load(id) {
+      if (id !== resolved) return undefined;
+      const found: Record<string, Record<string, number[]>> = {};
+      for (const entry of readdirSync(folder, { withFileTypes: true })) {
+        if (!entry.isDirectory()) continue;
+        const moods: Record<string, number[]> = {};
+        for (const file of readdirSync(`${folder}/${entry.name}`).sort()) {
+          const m = /^([a-z]+)_(\d)\.webp$/.exec(file);
+          if (m) (moods[m[1]!] ??= []).push(Number(m[2]));
+        }
+        if (!moods.neutral) this.error(`public/avatars/${entry.name} has no neutral_<0..9>.webp`);
+        found[entry.name] = moods;
+      }
+      return `export default ${JSON.stringify(found)};`;
+    },
+    configureServer(server) {
+      const changed = (file: string): void => {
+        if (!/public[\\/]avatars[\\/]/.test(file)) return;
+        const module = server.moduleGraph.getModuleById(resolved);
+        if (module) server.moduleGraph.invalidateModule(module);
+        server.ws.send({ type: 'full-reload' });
+      };
+      server.watcher.on('add', changed).on('unlink', changed);
+    },
+  };
+}
+
 // Relative asset paths, so the built site works from any folder on a web server.
 export default defineConfig({
   base: './',
-  plugins: [pages()],
+  plugins: [pages(), portraits()],
   build: { rollupOptions: { input: { index: at('./index.html') } } },
 });
