@@ -34,6 +34,7 @@ import { audition, prepareVoices, releaseVoices, speak, stopSpeaking } from './s
 const HUMAN = 0;
 const BOT_PAUSE = 700; // a computer move is never shown sooner than this
 const SWAP_MS = 200; // how long one picture of a portrait takes to turn into the next
+const THINKING_HOLD_MS = 5000; // how long a portrait stays thoughtful after a move, so it does not blink
 const reducedMotion = (): boolean => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const COURT_LOW = 5; // jack
 const COURT_HIGH = 7; // king
@@ -404,6 +405,7 @@ export function startApp(): void {
       if (pause > 0) await sleep(pause);
       if (id !== gameId) return;
       thinking = -1;
+      if (moods[seat].until <= performance.now()) setMood(seat, 'thinking', THINKING_HOLD_MS);
       await play(decision.action, id);
     }
     if (id === gameId) finish();
@@ -816,8 +818,9 @@ export function startApp(): void {
 
   const moodOf = (seat: number): Mood => {
     if (!settings.portraits || settings.avatars !== 'context') return 'neutral';
-    if (thinking === seat) return 'thinking';
-    return moods[seat].until > performance.now() ? moods[seat].mood : 'neutral';
+    // A reaction stays for its full time, even on their move: the ring and the dots show that.
+    if (moods[seat].until > performance.now()) return moods[seat].mood;
+    return thinking === seat ? 'thinking' : 'neutral';
   };
 
   /** A seat's picture for its mood: picked when the mood begins, and kept until it ends. */
