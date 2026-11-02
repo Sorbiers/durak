@@ -71,6 +71,8 @@ const SILERO_CAST = {
   morkott: { speaker: 'aidar', pitch: 'high', tempo: 0.96 }, // soft and reasonable
   kikimora: { speaker: 'kseniya', pitch: 'high', tempo: 1.04 }, // a thin, teasing voice
   satyr: { speaker: 'aidar', pitch: 'high', tempo: 1.1 }, // quick and merry
+  rita: { speaker: 'baya', pitch: 'low', tempo: 0.95 }, // cool, low, unhurried
+  sonya: { speaker: 'kseniya', pitch: 'medium', tempo: 1.06 }, // young and chirpy
 };
 // The text is prepared the way the Gogol project prepares its own (rut2s.js): stress is
 // marked with a plus sign before the stressed vowel, taken from Gogol's dictionary of 900,000
@@ -91,6 +93,7 @@ const STRESS = {
   сдано: 'сд+ано', сердца: 'с+ердца', слабо: 'сл+або', стоят: 'ст+оят', тому: 'том+у',
   белкам: 'б+елкам', белки: 'б+елки', гости: 'г+ости', леса: 'л+еса', места: 'м+еста',
   снегу: 'сн+егу', чащу: 'ч+ащу', поплутай: 'поплут+ай',
+  ловите: 'лов+ите', держите: 'держ+ите', смотрите: 'смотр+ите', спешите: 'спеш+ите', никому: 'ником+у',
   // not in the dictionary
   отбито: 'отб+ито', предсказуемо: 'предсказ+уемо', потрачен: 'потр+ачен',
   ага: 'аг+а', бережливее: 'бережл+ивее', буду: 'б+уду', вами: 'в+ами', велено: 'в+елено',
@@ -200,6 +203,8 @@ const PIPER_CAST = {
   morkott: { voice: 'dmitri', pitch: 0.94, pace: 1.04 },
   kikimora: { voice: 'irina', pitch: 1.1, pace: 0.97 },
   satyr: { voice: 'ruslan', pitch: 1.05, pace: 0.9 },
+  rita: { voice: 'irina', pitch: 0.95, pace: 1.04 },
+  sonya: { voice: 'irina', pitch: 1.05, pace: 0.94 },
 };
 // Piper guesses the stress from plain text. Where it guesses wrong, the word is given with
 // an accent on the stressed vowel, which it obeys.

@@ -6,7 +6,7 @@ Play it at https://podkidnoy.online/.
 ![The table in a four-player game: three opponents with portraits, two cards to beat, the discard pile, and the playable cards of the hand picked out](docs/screenshot.jpg)
 
 - Подкидной and переводной, 36 cards, 2 to 4 players.
-- Seventeen named opponents in three groups, realistic, caricature and fabled, each with a skill
+- Nineteen named opponents in three groups, realistic, caricature and fabled, each with a skill
   rating from one to five stars. Pick one to three of them by face or by strength.
 - Optional portraits that react to the game, remarks in each character's own voice, and
   reading the remarks aloud.
@@ -18,6 +18,12 @@ Play it at https://podkidnoy.online/.
   (or is cleared automatically, as an option). As a memory aid the discard pile can be laid
   out face up, sorted, for reading.
 - Russian, English and French.
+
+The same site has a second page, fortune-telling with the same 36 cards, at
+https://podkidnoy.online/fortune/ (see [Fortune-telling](#fortune-telling) below). A fortune-teller
+in the game's bottom left corner leads there: the one last chosen on that page, or one at random.
+With the pointer on her she smiles and says one of a few lines (`fortuneCalls` in
+`src/ui/i18n.ts`), and she steps aside when the player's hand grows into her corner.
 
 ## Running it
 
@@ -136,6 +142,35 @@ Sound follows three rules. Nothing is fetched unless speech is switched on, and 
 clips of the opponents at the table. A clip is played only if it has already arrived. And
 voices never overlap or queue: while one remark is being spoken, another goes unspoken.
 
+## Fortune-telling
+
+`fortune/index.html` is a second page, built from the same cards, cloth, portraits and voices. A
+fortune-teller of the player's choosing (Rada, young and kind; Carmen, Mérimée's, who believes in
+fate; or Izergil, Gorky's old woman) shuffles the deck; the player cuts it with a click, picks
+cards from a face-down fan, and turns them over one by one while she reacts to each. The reading is written out
+card by card beside the cloth (below it on a narrow screen), with what the spread adds up to.
+
+- Two systems on the same 36 cards. **Playing cards**, the Russian tradition: card of the day, yes
+  or no (by the colours of three cards), a wish (by the suit of one), past-present-future, and the
+  nine-card Gypsy spread (with the suit that leads it). **Lenormand**: every Lenormand card carries a
+  playing card as an inset, and those insets are exactly the 36 cards from six to ace, so each card
+  here wears its emblem as a ribbon. Card of the day, lines of three and of five, and the box of
+  nine, which say whether the cards lean bright or dark.
+- The meanings, spreads and texts are in `src/fortune/`: `meanings.ts` (both systems, in our own
+  words, in three languages), `spreads.ts`, `reading.ts` (the rules, which `tests/fortune.test.ts`
+  checks), `i18n.ts` (the page's texts and Rada's lines) and `seo.ts` (titles and the About text).
+- A reading is a seed and the places picked in the fan. The seed decides the shuffle and the cut,
+  so "Copy link" gives an address that lays out the same cards again; the question typed is not in
+  it, and never leaves the browser.
+- One question is not asked twice in a day: the same spread on the same day first offers the
+  earlier reading, and deals again only if asked to.
+- No reversed cards: the atlas court cards look the same either way up.
+- The fortune-tellers are listed in `src/fortune/tellers.ts`, and each has a few lines of her own in
+  `src/fortune/i18n.ts` besides the ones they share. Their pictures are in `public/avatars/<id>/`,
+  with the game's moods and one more, `shuffle`; one without it thinks while she shuffles. They are
+  not in the game's roster. A completed reading asks for `game.txt?f=<spread>`, which `stats.py`
+  counts under "Fortune readings", apart from games.
+
 ## Languages
 
 Russian, English and French, picked from the browser on a first visit and switched from the
@@ -179,16 +214,18 @@ it alone, so changes to headers must be made on the server.
 
 ### The site and search engines
 
-The game is a single page, served at the site root: `index.html` is the game, and its pictures
-and sounds are in `public/`.
+The site has two pages: the game, served at the site root (`index.html`), and the
+fortune-telling, in `fortune/` (`fortune/index.html`). Their pictures and sounds are in `public/`,
+shared, at the site root.
 
-It is written out at four addresses: the root, which picks the language from the browser, and
-`ru/`, `en/` and `fr/`, one language each. Every address has its own title, description and
-texts in its HTML, names the others as translations, and is listed in `sitemap.xml`, which the
-build also writes. The texts and the site's address live in `src/seo.ts`; `vite.config.ts`
-puts them into the pages. `public/robots.txt` points at the sitemap, the `og-*.jpg` files are
-the pictures shown when a link is shared, and `scripts/indexnow.sh` (run by the deploy) tells
-IndexNow — Bing, Yandex, Seznam — when the pages change.
+Each is written out at four addresses: its folder, which picks the language from the browser, and
+`ru/`, `en/` and `fr/` inside it, one language each. Every address has its own title, description
+and texts in its HTML, names the others as translations, and is listed in `sitemap.xml`, which
+the build also writes. The texts and the site's address live in `src/seo.ts` (the game) and
+`src/fortune/seo.ts`; `vite.config.ts` puts them into the pages. `public/robots.txt` points at the
+sitemap, the `og-*.jpg` and `og-fortune-*.jpg` files are the pictures shown when a link is shared,
+and `scripts/indexnow.sh` (run by the deploy) tells IndexNow — Bing, Yandex, Seznam — when the
+pages change.
 
 ## Card pictures
 

@@ -1,59 +1,103 @@
 import { readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
-import { LANGS, PAGES, SITE, type PageLang, otherLangs } from './src/seo';
+import { FORTUNE_PAGES } from './src/fortune/seo';
+import { TEXTS as FORTUNE_TEXTS } from './src/fortune/i18n';
+import { LANGS, PAGES, SITE, type PageLang, type PageText, otherLangs } from './src/seo';
 import { STRINGS } from './src/ui/i18n';
 
-// The game is a single page, served at the site root and written out at four addresses: its
-// own root, which picks the language from the browser, and ru/, en/ and fr/, one language
-// each. Search engines list a page by what its HTML says before any script runs, so every
-// address gets its own title, description and texts, and names the others as its translations.
+// The site has two parts, each a single page: the game, served at the site root, and the
+// fortune-telling, in fortune/. Each is written out at four addresses: its own folder, which
+// picks the language from the browser, and ru/, en/ and fr/ inside it, one language each. Search
+// engines list a page by what its HTML says before any script runs, so every address gets its
+// own title, description and texts, and names the others as its translations.
 type Variant = 'root' | PageLang;
 const LOCALE: Record<PageLang, string> = { ru: 'ru_RU', en: 'en_US', fr: 'fr_FR' };
 const SITE_NAME = 'Podkidnoy';
 // Names the game is also found by — promoted in the structured data for search engines.
 const ALT_NAMES = ['Podkidnoy Durak', 'Подкидной дурак', 'Durak online', 'Дурак онлайн', 'Dourak', 'Дурак', 'Durak'];
 
-const urlOf = (v: Variant): string => (v === 'root' ? SITE : `${SITE}${v}/`);
-const esc = (s: string): string =>
-  s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+interface Part {
+  dir: string; // its folder under the site root: '' for the game
+  html: string; // its page, as the build names it
+  texts: Record<PageLang, PageText>;
+  image: (lang: PageLang) => string; // the picture shown when a link is shared
+  data: (lang: PageLang) => Record<string, unknown>; // structured data for search engines
+  slots: (lang: PageLang) => Record<string, string>; // [[name]] in the page's HTML
+}
 
-function head(v: Variant): string {
-  const lang: PageLang = v === 'root' ? 'en' : v;
-  const { title, description } = PAGES[lang];
-  const image = `${SITE}og-${lang}.jpg`;
-  const data = {
-    '@context': 'https://schema.org',
+const GAME: Part = {
+  dir: '',
+  html: 'index.html',
+  texts: PAGES,
+  image: (lang) => `og-${lang}.jpg`,
+  data: (lang) => ({
     '@type': ['VideoGame', 'WebApplication'],
     name: STRINGS[lang].title,
     alternateName: [...new Set([...otherLangs(lang).map((l) => STRINGS[l].title), ...ALT_NAMES])].filter(
       (n) => n !== STRINGS[lang].title,
     ),
-    url: urlOf(v),
-    description,
-    image,
-    inLanguage: LANGS,
     genre: 'Card game',
     playMode: 'SinglePlayer',
     applicationCategory: 'GameApplication',
+  }),
+  slots: (lang) => ({ brand: STRINGS[lang].title, about: STRINGS[lang].about, close: STRINGS[lang].close }),
+};
+
+const FORTUNE: Part = {
+  dir: 'fortune/',
+  html: 'fortune/index.html',
+  texts: FORTUNE_PAGES,
+  image: (lang) => `og-fortune-${lang}.jpg`,
+  data: (lang) => ({
+    '@type': 'WebApplication',
+    name: FORTUNE_TEXTS[lang].title,
+    applicationCategory: 'EntertainmentApplication',
+  }),
+  slots: (lang) => ({
+    brand: FORTUNE_TEXTS[lang].title,
+    about: FORTUNE_TEXTS[lang].about,
+    close: FORTUNE_TEXTS[lang].close,
+    durak: FORTUNE_TEXTS[lang].durak,
+  }),
+};
+
+const PARTS = [GAME, FORTUNE];
+
+const urlOf = (v: Variant, part: Part): string => `${SITE}${part.dir}${v === 'root' ? '' : `${v}/`}`;
+const esc = (s: string): string =>
+  s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
+function head(v: Variant, part: Part): string {
+  const lang: PageLang = v === 'root' ? 'en' : v;
+  const { title, description } = part.texts[lang];
+  const image = `${SITE}${part.image(lang)}`;
+  const up = part.dir ? '../' : './'; // from the part's folder to the site root
+  const data = {
+    '@context': 'https://schema.org',
+    ...part.data(lang),
+    url: urlOf(v, part),
+    description,
+    image,
+    inLanguage: LANGS,
     operatingSystem: 'Any',
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   };
   return [
     `<title>${esc(title)}</title>`,
     `<meta name="description" content="${esc(description)}" />`,
-    `<link rel="canonical" href="${urlOf(v)}" />`,
-    ...LANGS.map((l) => `<link rel="alternate" hreflang="${l}" href="${urlOf(l)}" />`),
-    `<link rel="alternate" hreflang="x-default" href="${urlOf('root')}" />`,
-    `<link rel="icon" href="./favicon.ico" sizes="32x32" />`,
-    `<link rel="icon" href="./favicon.svg" type="image/svg+xml" />`,
-    `<link rel="apple-touch-icon" href="./apple-touch-icon.png" />`,
+    `<link rel="canonical" href="${urlOf(v, part)}" />`,
+    ...LANGS.map((l) => `<link rel="alternate" hreflang="${l}" href="${urlOf(l, part)}" />`),
+    `<link rel="alternate" hreflang="x-default" href="${urlOf('root', part)}" />`,
+    `<link rel="icon" href="${up}favicon.ico" sizes="32x32" />`,
+    `<link rel="icon" href="${up}favicon.svg" type="image/svg+xml" />`,
+    `<link rel="apple-touch-icon" href="${up}apple-touch-icon.png" />`,
     `<meta name="theme-color" content="#1d4a39" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:site_name" content="${SITE_NAME}" />`,
     `<meta property="og:title" content="${esc(title)}" />`,
     `<meta property="og:description" content="${esc(description)}" />`,
-    `<meta property="og:url" content="${urlOf(v)}" />`,
+    `<meta property="og:url" content="${urlOf(v, part)}" />`,
     `<meta property="og:locale" content="${LOCALE[lang]}" />`,
     ...otherLangs(lang).map((l) => `<meta property="og:locale:alternate" content="${LOCALE[l]}" />`),
     `<meta property="og:image" content="${image}" />`,
@@ -66,14 +110,10 @@ function head(v: Variant): string {
 }
 
 /** Fills in what the page says about itself, for one address. */
-function localize(html: string, v: Variant): string {
+function localize(html: string, v: Variant, part: Part): string {
   const lang: PageLang = v === 'root' ? 'en' : v;
   // The slots of the page: [[name]] in its HTML is replaced by the text of that name.
-  const slots: Record<string, string> = {
-    brand: STRINGS[lang].title,
-    about: STRINGS[lang].about,
-    close: STRINGS[lang].close,
-  };
+  const slots = part.slots(lang);
   // The language switch: a link to the page in each of the other languages.
   const switchTo = (cls: string): string =>
     otherLangs(lang)
@@ -81,8 +121,8 @@ function localize(html: string, v: Variant): string {
       .join('');
   const out = html
     .replace(/<html lang="[^"]*"/, `<html lang="${lang}"`)
-    .replace('<!--seo-head-->', () => head(v))
-    .replace('<!--seo-about-->', () => PAGES[lang].about.trim())
+    .replace('<!--seo-head-->', () => head(v, part))
+    .replace('<!--seo-about-->', () => part.texts[lang].about.trim())
     .replace(/<!--langs:(\w+)-->/, (_, cls: string) => switchTo(cls))
     .replace(/\[\[(\w+)\]\]/g, (whole, name: string) => (name in slots ? esc(slots[name]) : whole));
   // A language page sits one folder down, so its relative links climb one more.
@@ -91,12 +131,14 @@ function localize(html: string, v: Variant): string {
 
 function sitemap(): string {
   const today = new Date().toISOString().slice(0, 10);
-  const links =
-    LANGS.map((l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${urlOf(l)}" />`).join('\n') +
-    `\n    <xhtml:link rel="alternate" hreflang="x-default" href="${urlOf('root')}" />`;
-  const urls = (['root', ...LANGS] as Variant[])
-    .map((v) => `  <url>\n    <loc>${urlOf(v)}</loc>\n    <lastmod>${today}</lastmod>\n${links}\n  </url>`)
-    .join('\n');
+  const urls = PARTS.flatMap((part) => {
+    const links =
+      LANGS.map((l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${urlOf(l, part)}" />`).join('\n') +
+      `\n    <xhtml:link rel="alternate" hreflang="x-default" href="${urlOf('root', part)}" />`;
+    return (['root', ...LANGS] as Variant[]).map(
+      (v) => `  <url>\n    <loc>${urlOf(v, part)}</loc>\n    <lastmod>${today}</lastmod>\n${links}\n  </url>`,
+    );
+  }).join('\n');
   return (
     '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n' +
@@ -104,17 +146,19 @@ function sitemap(): string {
   );
 }
 
-const LANG_PAGE = /^\/(ru|en|fr)\/(?:index\.html)?(?:\?.*)?$/;
+// A language address of either part: the part's folder, then the language.
+const LANG_PAGE = /^\/(fortune\/)?(ru|en|fr)\/(?:index\.html)?(?:\?.*)?$/;
 
 function pages(): Plugin {
   return {
     name: 'synarteum-pages',
     enforce: 'post',
-    // While developing there is no build: the language addresses are served from the same
+    // While developing there is no build: the language addresses are served from the part's
     // page, filled in as it goes out.
     configureServer(server) {
       server.middlewares.use((req, _res, next) => {
-        if (LANG_PAGE.test(req.url ?? '')) req.url = '/index.html';
+        const m = (req.url ?? '').match(LANG_PAGE);
+        if (m) req.url = `/${m[1] ?? ''}index.html`;
         next();
       });
     },
@@ -122,17 +166,19 @@ function pages(): Plugin {
       order: 'pre',
       handler(html, ctx) {
         if (!ctx.server) return html;
+        const part = ctx.path.startsWith(`/${FORTUNE.dir}`) ? FORTUNE : GAME;
         const m = (ctx.originalUrl ?? '').match(LANG_PAGE);
-        return localize(html, m ? (m[1] as PageLang) : 'root');
+        return localize(html, m ? (m[2] as PageLang) : 'root', part);
       },
     },
     generateBundle(_options, bundle) {
-      const page = bundle['index.html'];
-      if (page && page.type === 'asset') {
+      for (const part of PARTS) {
+        const page = bundle[part.html];
+        if (!page || page.type !== 'asset') continue;
         const html = String(page.source);
-        page.source = localize(html, 'root');
+        page.source = localize(html, 'root', part);
         for (const lang of LANGS) {
-          this.emitFile({ type: 'asset', fileName: `${lang}/index.html`, source: localize(html, lang) });
+          this.emitFile({ type: 'asset', fileName: `${part.dir}${lang}/index.html`, source: localize(html, lang, part) });
         }
       }
       this.emitFile({ type: 'asset', fileName: 'sitemap.xml', source: sitemap() });
@@ -183,5 +229,5 @@ function portraits(): Plugin {
 export default defineConfig({
   base: './',
   plugins: [pages(), portraits()],
-  build: { rollupOptions: { input: { index: at('./index.html') } } },
+  build: { rollupOptions: { input: { index: at('./index.html'), fortune: at('./fortune/index.html') } } },
 });

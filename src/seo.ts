@@ -49,12 +49,14 @@ export const PAGES: Record<PageLang, PageText> = {
 <h3>Что есть в игре</h3>
 <ul>
 <li>Подкидной и переводной дурак, колода 36 карт, от двух до четырёх игроков.</li>
-<li>Семнадцать соперников с характером и пять уровней силы, от новичка до мастера; уровень каждого
+<li>Девятнадцать соперников с характером и пять уровней силы, от новичка до мастера; уровень каждого
 можно задать отдельно.</li>
 <li>Портреты, реплики и озвучка — по желанию.</li>
 <li>Подсказка хода, просмотр «бито», счёт побед и поражений.</li>
 <li>Русский, английский и французский язык.</li>
 </ul>
+<p>На этом же сайте есть <a href="/fortune/ru/">гадание на картах</a> на той же колоде из 36 карт:
+по русской традиции и по Ленорман.</p>
 
 <h3>Правила</h3>
 <ul>
@@ -106,12 +108,14 @@ calculated exactly.</p>
 <h3>What is in the game</h3>
 <ul>
 <li>Podkidnoy (throw-in) and perevodnoy (passing) Durak, a 36-card deck, two to four players.</li>
-<li>Seventeen opponents with characters of their own and five levels of strength, from beginner to
+<li>Nineteen opponents with characters of their own and five levels of strength, from beginner to
 master; each one's level can be set separately.</li>
 <li>Portraits, table talk and Russian voice lines, all optional.</li>
 <li>A hint for the move, a view of the discard pile, a tally of wins and losses.</li>
 <li>Russian, English and French.</li>
 </ul>
+<p>The same site also has <a href="/fortune/en/">fortune-telling with playing cards</a>, on the same
+36-card deck: the Russian tradition and Lenormand.</p>
 
 <h3>Rules</h3>
 <ul>
@@ -165,13 +169,15 @@ souviennent de qui a ramassé quoi et calculent plusieurs coups à l’avance. Q
 <ul>
 <li>Dourak podkidnoï (où l’on ajoute des cartes) et perevodnoï (où l’on transfère l’attaque), jeu
 de 36 cartes, de deux à quatre joueurs.</li>
-<li>Dix-sept adversaires qui ont chacun leur caractère et cinq niveaux de force, du débutant au
+<li>Dix-neuf adversaires qui ont chacun leur caractère et cinq niveaux de force, du débutant au
 maître ; le niveau de chacun se règle séparément.</li>
 <li>Portraits, remarques à table et voix (en russe) : tout est facultatif.</li>
 <li>Un conseil pour le coup à jouer, la vue de la défausse, le décompte des victoires et des
 défaites.</li>
 <li>En russe, en anglais et en français.</li>
 </ul>
+<p>Le même site propose aussi la <a href="/fortune/fr/">cartomancie</a>, avec le même jeu de 36 cartes :
+la tradition russe et le Lenormand.</p>
 
 <h3>Règles</h3>
 <ul>

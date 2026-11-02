@@ -44,6 +44,14 @@ export const CHARACTERS: Character[] = [
     pitch: 1.1,
   },
   {
+    id: 'rita',
+    name: { ru: 'Рита', en: 'Rita', fr: 'Rita' },
+    style: 'real',
+    rating: 4,
+    female: true,
+    pitch: 0.95,
+  },
+  {
     id: 'lev',
     name: { ru: 'Лев', en: 'Lev', fr: 'Lev' },
     style: 'cartoon',
@@ -122,6 +130,14 @@ export const CHARACTERS: Character[] = [
     rating: 3,
     female: false,
     pitch: 0.9,
+  },
+  {
+    id: 'sonya',
+    name: { ru: 'Соня', en: 'Sonya', fr: 'Sonia' },
+    style: 'real',
+    rating: 2,
+    female: true,
+    pitch: 1.2,
   },
   {
     id: 'fyodor',

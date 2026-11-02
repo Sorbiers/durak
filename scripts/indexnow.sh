@@ -12,6 +12,10 @@ URLS=(
   "https://$HOST/ru/"
   "https://$HOST/en/"
   "https://$HOST/fr/"
+  "https://$HOST/fortune/"
+  "https://$HOST/fortune/ru/"
+  "https://$HOST/fortune/en/"
+  "https://$HOST/fortune/fr/"
   "https://$HOST/sitemap.xml"
 )
 

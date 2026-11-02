@@ -129,6 +129,15 @@ const en = {
   fairness:
     'Computer players are given only what a player in their seat could see: their own hand, the table, the discard pile and cards picked up openly. The order of the deck and your hand never reach them.',
   ranks: ['6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'],
+  fortune: 'Fortune-telling',
+  // What the fortune-teller in the corner says to call the player over, one at random.
+  fortuneCalls: [
+    'Take a break, sweetheart, let me read your cards!',
+    'Enough Durak! Let me tell you who the fool is.',
+    'Cross my palm with silver… Just kidding, it’s free!',
+    'I see a long journey and a government building. Come, I’ll tell you more.',
+    'No trumps coming? The cards know why.',
+  ],
 };
 
 const ru: typeof en = {
@@ -260,6 +269,14 @@ const ru: typeof en = {
   fairness:
     'Компьютерные игроки получают только то, что видел бы человек на их месте: свои карты, стол, отбой и карты, взятые в открытую. Порядок колоды и ваши карты им не передаются.',
   ranks: ['6', '7', '8', '9', '10', 'В', 'Д', 'К', 'Т'],
+  fortune: 'Гадание на картах',
+  fortuneCalls: [
+    'Отдохни, золотце, дай погадаю!',
+    'Хватит в дурака! Давай погадаю, кто тут дурак.',
+    'Позолоти ручку… Шучу, гадаю бесплатно!',
+    'Вижу дальнюю дорогу и казённый дом. Зайди, расскажу подробнее.',
+    'Козыри не идут? Карты знают почему.',
+  ],
 };
 
 const fr: typeof en = {
@@ -391,6 +408,14 @@ const fr: typeof en = {
   fairness:
     'Les joueurs artificiels ne reçoivent que ce qu’un joueur à leur place pourrait voir : leur propre main, la table, la défausse et les cartes ramassées à découvert. L’ordre du talon et votre main ne leur parviennent jamais.',
   ranks: ['6', '7', '8', '9', '10', 'V', 'D', 'R', 'A'],
+  fortune: 'Cartomancie',
+  fortuneCalls: [
+    'Repose-toi, mon trésor, je vais te tirer les cartes !',
+    'Assez joué au dourak ! Je vais te dire qui est le sot.',
+    'Une pièce dans la main… Je plaisante, c’est gratuit !',
+    'Je vois un long voyage et des papiers officiels. Viens, je t’en dirai plus.',
+    'Les atouts ne viennent pas ? Les cartes savent pourquoi.',
+  ],
 };
 
 export type Strings = typeof en;

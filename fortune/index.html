@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--seo-head-->
+  </head>
+  <body class="fortune">
+    <header id="bar">
+      <h1 id="brand" class="brand">[[brand]]</h1>
+      <div class="meta" id="meta"></div>
+      <nav>
+        <a id="to-durak" class="ghost" href="../">[[durak]]</a>
+        <button id="btn-new" class="ghost"></button>
+        <button id="btn-voice" class="ghost"></button>
+        <button id="btn-about" class="ghost"><span>[[about]]</span></button>
+        <span id="langs"><!--langs:ghost--></span>
+      </nav>
+    </header>
+
+    <main id="stage">
+      <div id="labels"></div>
+      <div id="cards"></div>
+      <div id="seats">
+        <img id="reader-face" class="avatar" alt="" draggable="false" />
+        <div id="reader-plate" class="seat"><span class="name"></span><span class="bubble"></span></div>
+      </div>
+      <div id="chooser" hidden></div>
+      <div id="actions">
+        <div id="status"></div>
+        <div id="buttons"></div>
+      </div>
+    </main>
+    <section id="reading" hidden aria-live="polite"></section>
+
+    <dialog id="about">
+      <form method="dialog">
+        <div id="about-body"><!--seo-about--></div>
+        <div class="buttons"><button id="about-close" class="primary">[[close]]</button></div>
+      </form>
+    </dialog>
+
+    <script type="module" src="/src/fortune/main.ts"></script>
+  </body>
+</html>

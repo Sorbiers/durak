@@ -20,25 +20,24 @@ import {
 } from '../engine/game';
 import { observe } from '../engine/observe';
 import { cryptoRng } from '../engine/rng';
+import { TELLERS, tellerById, tellerPicture } from '../fortune/tellers';
 import { PAGES, otherLangs } from '../seo';
 import { AiClient } from './aiClient';
+import { createCard, isRed, suitSvg } from './cardView';
 import { CHARACTERS, Character, Mood, characterById } from './characters';
 import { playClip } from './clip';
 import { Lang, STRINGS, Strings, fill } from './i18n';
 import { Geometry, Place, computeLayout } from './layout';
 import { REMARK_CHANCE, Remark, plainRemark, remark } from './phrases';
 import { pickPicture, portraitUrl, preloadAvatars } from './portraits';
-import { PAGE_LANG, ROOT, browserLang } from './root';
+import { PAGE_LANG, PART_ROOT, ROOT, browserLang } from './root';
 import { audition, prepareVoices, releaseVoices, speak, stopSpeaking } from './speech';
+import { load, save } from './store';
 
 const HUMAN = 0;
 const BOT_PAUSE = 700; // a computer move is never shown sooner than this
 const SWAP_MS = 200; // how long one picture of a portrait takes to turn into the next
 const reducedMotion = (): boolean => matchMedia('(prefers-reduced-motion: reduce)').matches;
-const COURT_LOW = 5; // jack
-const COURT_HIGH = 7; // king
-const PICTURE_NAMES = ['jack', 'queen', 'king', 'ace']; // ranks 5..8
-const SUIT_NAMES = ['spades', 'hearts', 'diamonds', 'clubs'];
 
 type AvatarMode = 'static' | 'context';
 
@@ -129,34 +128,7 @@ const DEFAULTS: Settings = {
   lang: browserLang(),
 };
 
-function load<T>(key: string, fallback: T, store: () => Storage = () => localStorage): T {
-  try {
-    const raw = store().getItem(key);
-    return raw ? { ...fallback, ...JSON.parse(raw) } : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function save(key: string, value: unknown, store: () => Storage = () => localStorage): void {
-  try {
-    store().setItem(key, JSON.stringify(value));
-  } catch {
-    // Storage may be unavailable (private window); the game works without it.
-  }
-}
-
-const SUIT_SVG = [
-  '<path d="M50 6C80 32 92 46 92 60c0 13-10 20-20 20-8 0-14-4-18-10 1 10 4 18 10 24H36c6-6 9-14 10-24-4 6-10 10-18 10C18 80 8 73 8 60 8 46 20 32 50 6Z"/>',
-  '<path d="M50 88C20 62 8 46 8 30 8 16 19 8 30 8c9 0 16 5 20 13 4-8 11-13 20-13 11 0 22 8 22 22 0 16-12 32-42 58Z"/>',
-  '<path d="M50 4c10 18 24 34 40 46-16 12-30 28-40 46C40 78 26 62 10 50 26 38 40 22 50 4Z"/>',
-  '<circle cx="50" cy="27" r="20"/><circle cx="27" cy="58" r="20"/><circle cx="73" cy="58" r="20"/><path d="M44 44h12c0 26 3 40 9 50H35c6-10 9-24 9-50Z"/>',
-];
-const suitSvg = (suit: number): string =>
-  `<svg class="suit" viewBox="0 0 100 100" aria-hidden="true">${SUIT_SVG[suit]}</svg>`;
-const isRed = (suit: number): boolean => suit === 1 || suit === 2;
-
-const $ = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
+const $ =<T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export function startApp(): void {
@@ -170,6 +142,12 @@ export function startApp(): void {
   const discardDialog = $<HTMLDialogElement>('discard-view');
   const aboutDialog = $<HTMLDialogElement>('about');
   let aboutLang: Lang | undefined; // the language the About text was last written in
+  const tellerLink = $<HTMLAnchorElement>('teller');
+  // The fortune-teller in the corner: the one last chosen on the fortune-telling page, or one of
+  // them at random for someone who has not been there.
+  const caller = tellerById(
+    load<{ teller?: string }>('fortune.settings', {}).teller ?? TELLERS[(Math.random() * TELLERS.length) | 0].id,
+  );
 
   const ai = new AiClient();
   // A second worker weighs the player's position, for hints and the chance on show, so the
@@ -237,43 +215,12 @@ export function startApp(): void {
   const cardEls: HTMLElement[] = [];
   for (let c = 0; c < DECK_SIZE; c++) {
     const el = createCard(c);
-    cardEls.push(el);
-    cardsLayer.appendChild(el);
-  }
-
-  function createCard(c: Card): HTMLElement {
-    const suit = suitOf(c);
-    const rank = rankOf(c);
-    const court = rank >= COURT_LOW && rank <= COURT_HIGH;
-    const el = document.createElement('div');
-    el.className = `card ${isRed(suit) ? 'red' : 'black'}${court ? ' court' : ''}${rank === 8 ? ' ace' : ''}`;
-    const index = `<b class="rank"></b>${suitSvg(suit)}`;
-    el.innerHTML =
-      `<div class="card-inner"><div class="card-face">` +
-      `<span class="idx tl">${index}</span>` +
-      `<span class="centre">${court ? '<b class="rank"></b>' : ''}${suitSvg(suit)}</span>` +
-      `<span class="idx br">${index}</span>` +
-      `</div><div class="card-back"></div></div>`;
-    if (rank >= COURT_LOW) {
-      // Use the picture if a file exists, as SVG or PNG; without one the drawn face remains.
-      const base = `${ROOT}cards/${PICTURE_NAMES[rank - COURT_LOW]}_${SUIT_NAMES[suit]}`;
-      const art = document.createElement('img');
-      art.className = 'art';
-      art.alt = '';
-      art.draggable = false;
-      art.addEventListener('load', () => el.classList.add('pictured'));
-      art.addEventListener('error', () => {
-        if (art.src.endsWith('.svg')) art.src = `${base}.png`;
-        else art.remove();
-      });
-      art.src = `${base}.svg`;
-      el.querySelector('.card-face')!.appendChild(art);
-    }
     el.addEventListener('click', (e) => {
       e.stopPropagation();
       onCardClick(c);
     });
-    return el;
+    cardEls.push(el);
+    cardsLayer.appendChild(el);
   }
 
   const cardText = (c: Card): string => t.ranks[rankOf(c)] + SUIT_SYMBOLS[suitOf(c)];
@@ -998,11 +945,16 @@ export function startApp(): void {
     if (settings.portraits && !large) layout = lay('normal');
     geo = layout.geo;
     fanEnds = game.hands.map(() => 0);
+    let handLeft = Infinity; // the left edge of the player's hand
     for (const place of layout.places.values()) {
       if (place.where === 'hand' && place.seat !== HUMAN) {
         fanEnds[place.seat] = Math.max(fanEnds[place.seat], place.x + (geo.cw * place.scale) / 2);
+      } else if (place.where === 'hand') {
+        handLeft = Math.min(handLeft, place.x - geo.cw / 2);
       }
     }
+    // The fortune-teller in the corner steps aside when the hand grows into her corner.
+    tellerLink.classList.toggle('away', handLeft < tellerLink.offsetLeft + tellerLink.offsetWidth + 10);
     stage.style.setProperty('--cw', `${geo.cw}px`);
     stage.classList.toggle('instant', instant);
     stage.classList.toggle('big-portraits', large);
@@ -1333,12 +1285,14 @@ export function startApp(): void {
     $('btn-settings').textContent = t.settings;
     $('btn-about').firstElementChild!.textContent = t.about;
     $('btn-about').setAttribute('aria-label', t.about);
+    tellerLink.href = `${ROOT}fortune/${settings.lang}/`;
+    tellerLink.setAttribute('aria-label', `${t.fortune}: ${caller.name[settings.lang]}`);
     if (aboutLang !== settings.lang) {
       aboutLang = settings.lang;
       // The switch is made of real links to the pages in the other languages, for search
       // engines and for opening in a new tab; an ordinary click switches in place (see below).
       $('langs').innerHTML = otherLangs(settings.lang)
-        .map((l) => `<a class="ghost" href="${ROOT}${l}/" hreflang="${l}" data-lang="${l}">${l.toUpperCase()}</a>`)
+        .map((l) => `<a class="ghost" href="${PART_ROOT}${l}/" hreflang="${l}" data-lang="${l}">${l.toUpperCase()}</a>`)
         .join('');
       $('about-body').innerHTML = PAGES[settings.lang].about;
       $('about-close').textContent = t.close;
@@ -1584,7 +1538,7 @@ export function startApp(): void {
     save('durak.settings', settings);
     // Keep the address in step with the language without reloading and losing the game.
     try {
-      history.replaceState(null, '', `${ROOT}${settings.lang}/`);
+      history.replaceState(null, '', `${PART_ROOT}${settings.lang}/`);
     } catch {
       // Not every place a page can be opened from allows this; the switch still works.
     }
@@ -1595,6 +1549,32 @@ export function startApp(): void {
     e.stopPropagation();
     if (aid('showKnown')) openDiscard();
   });
+  // The fortune-teller smiles and says one of her lines while the pointer is on her.
+  const callerFace = tellerLink.querySelector('img')!;
+  const callerTip = tellerLink.querySelector<HTMLElement>('.tip')!;
+  const calm = tellerPicture(caller, 'neutral');
+  const glad = tellerPicture(caller, 'pleased');
+  let lastCall = -1;
+  callerFace.src = calm;
+  new Image().src = glad; // so that her smile does not wait for the network
+  const beckon = (): void => {
+    const calls = t.fortuneCalls;
+    let i = (Math.random() * calls.length) | 0;
+    if (i === lastCall) i = (i + 1) % calls.length;
+    lastCall = i;
+    callerTip.textContent = calls[i];
+    callerFace.src = glad;
+  };
+  const rest = (): void => {
+    callerFace.src = calm;
+  };
+  tellerLink.addEventListener('pointerenter', beckon);
+  tellerLink.addEventListener('focus', beckon);
+  tellerLink.addEventListener('pointerleave', rest);
+  tellerLink.addEventListener('blur', rest);
+  // The page's keys play the game; on her, Enter follows the link instead.
+  tellerLink.addEventListener('keydown', (e) => e.stopPropagation());
+  tellerLink.addEventListener('click', (e) => e.stopPropagation());
   stage.addEventListener('click', cancelSelection);
   document.addEventListener('keydown', (e) => {
     if (document.querySelector('dialog[open]')) return; // a dialog handles its own keys

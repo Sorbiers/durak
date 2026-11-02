@@ -939,6 +939,100 @@ button.hinted {
   outline-offset: 2px;
 }
 
+/* A fortune-teller in the bottom left corner, who calls the player over to the fortune-telling
+   page. Her picture is zoomed in on her face. She steps aside when the player's hand reaches
+   the corner. */
+.teller-link {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 360;
+  width: 48px;
+  height: 48px;
+  transition:
+    opacity 0.3s,
+    transform 0.2s;
+}
+.teller-link .face {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--ivory);
+  box-shadow:
+    0 0 0 2px rgba(216, 178, 106, 0.55),
+    0 4px 12px rgba(0, 0, 0, 0.45);
+  transition: box-shadow 0.2s;
+}
+.teller-link img {
+  display: block;
+  width: 160%;
+  height: 160%;
+  margin: -2% 0 0 -30%;
+  object-fit: cover;
+}
+.teller-link:hover,
+.teller-link:focus-visible {
+  transform: scale(1.08);
+}
+.teller-link:hover .face,
+.teller-link:focus-visible .face {
+  box-shadow:
+    0 0 0 2px var(--brass-bright),
+    0 0 14px rgba(242, 213, 148, 0.55),
+    0 4px 12px rgba(0, 0, 0, 0.45);
+}
+.teller-link.away {
+  opacity: 0;
+  pointer-events: none;
+}
+/* What she says, beside her, while the pointer is on her. */
+.teller-link .tip {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  width: max-content;
+  max-width: min(260px, 64vw);
+  padding: 5px 14px;
+  border-radius: 14px;
+  background: var(--ivory);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 18px;
+  line-height: 1.15;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  transform: translate(-6px, -50%);
+  transition:
+    opacity 0.2s,
+    transform 0.2s;
+  pointer-events: none;
+}
+.teller-link .tip::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  background: var(--ivory);
+  transform: translateY(-50%) rotate(45deg);
+}
+.teller-link:hover .tip,
+.teller-link:focus-visible .tip {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+@media (max-width: 760px) {
+  .teller-link {
+    left: 10px;
+    bottom: 10px;
+    width: 40px;
+    height: 40px;
+  }
+}
+
 /* ------------------------------------------------------------------- result */
 
 #result {
