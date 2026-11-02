@@ -74,6 +74,11 @@ export const PAGES: Record<PageLang, PageText> = {
 дурака нет: ничья.</li>
 </ul>
 
+<p class="fine">Конфиденциальность: никаких cookie и трекеров, настройки и счёт остаются в вашем браузере.
+Сервер хранит стандартный временный журнал запросов с IP-адресом и браузером. Сервер также хранит
+статистику сыгранных партий. Сообщайте о проблемах здесь
+<a href="${REPO}/issues" target="_blank" rel="noopener">github.com/Sorbiers/durak/issues</a>.</p>
+
 <p class="fine">Исходный код открыт, лицензия MIT:
 <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
   },
@@ -126,6 +131,11 @@ led, and the defender last.</li>
 <li>The last player holding cards is the fool. If the last attack is beaten with the
 defender's last card, there is no fool: it is a draw.</li>
 </ul>
+
+<p class="fine">Privacy: no cookies and no trackers, and your settings and scores stay in your browser.
+The server keeps a standard temporary log of requests, with IP address and browser. The server also
+keeps statistics of games played. Report problems here:
+<a href="${REPO}/issues" target="_blank" rel="noopener">github.com/Sorbiers/durak/issues</a>.</p>
 
 <p class="fine">The source is open under the MIT licence:
 <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
@@ -180,6 +190,11 @@ commençant par celui qui a ouvert, le défenseur en dernier.</li>
 <li>Le dernier à garder des cartes est le dourak. Si la dernière attaque est battue avec la
 dernière carte du défenseur, il n’y a pas de dourak : partie nulle.</li>
 </ul>
+
+<p class="fine">Confidentialité : ni cookies ni traceurs, vos réglages et vos scores restent dans votre
+navigateur. Le serveur conserve un journal temporaire standard des requêtes, avec l’adresse IP et le
+navigateur. Le serveur conserve aussi des statistiques sur les parties jouées. Signalez les problèmes
+ici : <a href="${REPO}/issues" target="_blank" rel="noopener">github.com/Sorbiers/durak/issues</a>.</p>
 
 <p class="fine">Le code source est ouvert, sous licence MIT :
 <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,

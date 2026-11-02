@@ -34,7 +34,6 @@ import { audition, prepareVoices, releaseVoices, speak, stopSpeaking } from './s
 const HUMAN = 0;
 const BOT_PAUSE = 700; // a computer move is never shown sooner than this
 const SWAP_MS = 200; // how long one picture of a portrait takes to turn into the next
-const THINKING_HOLD_MS = 5000; // how long a portrait stays thoughtful after a move, so it does not blink
 const reducedMotion = (): boolean => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const COURT_LOW = 5; // jack
 const COURT_HIGH = 7; // king
@@ -209,6 +208,7 @@ export function startApp(): void {
   // a draw is one of those who drew.
   let left: boolean[] = [];
   let resigned = false; // the human gave the game up
+  let moved = false; // the human has made a move in this game
   let resignArmed = false; // "Resign" was pressed once and is waiting to be confirmed
   let clearTable: (() => void) | null = null; // set while a beaten bout waits to be cleared
   // How the last game with this line-up ended, which decides who leads the next one. Both are
@@ -340,6 +340,7 @@ export function startApp(): void {
     logShown = 0;
     left = game.hands.map(() => false);
     resigned = false;
+    moved = false;
     resignArmed = false;
     resultEl.hidden = true;
     moods = Array.from({ length: n }, () => ({ mood: 'neutral' as Mood, until: 0 }));
@@ -405,7 +406,6 @@ export function startApp(): void {
       if (pause > 0) await sleep(pause);
       if (id !== gameId) return;
       thinking = -1;
-      if (moods[seat].until <= performance.now()) setMood(seat, 'thinking', THINKING_HOLD_MS);
       await play(decision.action, id);
     }
     if (id === gameId) finish();
@@ -456,6 +456,8 @@ export function startApp(): void {
       clearTable = null;
       if (id !== gameId) return;
     }
+    // A portrait that goes on thinking takes a new thinking picture with each of its moves.
+    if (faces[seat]!.mood === 'thinking') faces[seat]!.mood = null;
     game = next;
     if (firstOut === undefined) {
       // Hands empty one move at a time, so this is whoever just played their last card.
@@ -515,12 +517,20 @@ export function startApp(): void {
     finish();
   }
 
+  /** Lets the server count a game: asking for an empty file is enough, as its log keeps the address. */
+  function reportGame(event: 'played' | 'ended'): void {
+    const url = `${ROOT}game.txt?e=${event}&o=${settings.opponents.join(',')}`;
+    void fetch(url, { cache: 'no-store', keepalive: true }).catch(() => undefined);
+  }
+
   function humanPlay(a: number): void {
     if (!awaitingHuman) return;
     awaitingHuman = false;
     resignArmed = false;
     selected = [];
     notice = '';
+    if (!moved) reportGame('played');
+    moved = true;
     const id = gameId;
     void play(a, id).then(() => {
       if (id === gameId) void run(id);
@@ -544,6 +554,7 @@ export function startApp(): void {
     });
     tallies = { ...tallies, [key]: { games: tally.games + 1, scores } };
     save('durak.scores', tallies, session);
+    if (moved) reportGame('ended');
 
     let text: string;
     if (resigned) text = t.youResigned;
@@ -818,9 +829,11 @@ export function startApp(): void {
 
   const moodOf = (seat: number): Mood => {
     if (!settings.portraits || settings.avatars !== 'context') return 'neutral';
-    // A reaction stays for its full time, even on their move: the ring and the dots show that.
+    if (thinking === seat) return 'thinking';
     if (moods[seat].until > performance.now()) return moods[seat].mood;
-    return thinking === seat ? 'thinking' : 'neutral';
+    // Whoever leads or defends stays thoughtful until the lead ends, instead of blinking.
+    const inBout = game.attacks.length > 0 && (seat === game.attacker || seat === game.defender);
+    return inBout ? 'thinking' : 'neutral';
   };
 
   /** A seat's picture for its mood: picked when the mood begins, and kept until it ends. */

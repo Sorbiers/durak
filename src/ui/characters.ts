@@ -116,8 +116,8 @@ export const CHARACTERS: Character[] = [
     pitch: 0.8,
   },
   {
-    id: 'matroskin',
-    name: { ru: 'Матроскин', en: 'Matroskin', fr: 'Matroskine' },
+    id: 'morkott',
+    name: { ru: 'Моркот', en: 'Morkott', fr: 'Morkott' },
     style: 'fable',
     rating: 3,
     female: false,

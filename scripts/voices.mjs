@@ -68,7 +68,7 @@ const SILERO_CAST = {
   fagot: { speaker: 'eugene', pitch: 'x-high', tempo: 1.1 }, // a high, cracked patter
   begemot: { speaker: 'eugene', pitch: 'x-low', tempo: 0.94 }, // plump and pompous
   azazello: { speaker: 'eugene', pitch: 'low', tempo: 1.08 }, // flat and curt
-  matroskin: { speaker: 'aidar', pitch: 'high', tempo: 0.96 }, // soft and reasonable
+  morkott: { speaker: 'aidar', pitch: 'high', tempo: 0.96 }, // soft and reasonable
   kikimora: { speaker: 'kseniya', pitch: 'high', tempo: 1.04 }, // a thin, teasing voice
   satyr: { speaker: 'aidar', pitch: 'high', tempo: 1.1 }, // quick and merry
 };
@@ -197,7 +197,7 @@ const PIPER_CAST = {
   fagot: { voice: 'dmitri', pitch: 1.1, pace: 0.9 },
   begemot: { voice: 'ruslan', pitch: 0.9, pace: 1.04 },
   azazello: { voice: 'denis', pitch: 1.0, pace: 0.94 },
-  matroskin: { voice: 'dmitri', pitch: 0.94, pace: 1.04 },
+  morkott: { voice: 'dmitri', pitch: 0.94, pace: 1.04 },
   kikimora: { voice: 'irina', pitch: 1.1, pace: 0.97 },
   satyr: { voice: 'ruslan', pitch: 1.05, pace: 0.9 },
 };

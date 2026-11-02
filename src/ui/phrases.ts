@@ -854,8 +854,8 @@ const PERSONAL: Record<string, Partial<Record<Lang, Lines>>> = {
       youFool: ['Tu peux partir.', 'Même la crème n’y ferait rien.', 'Fais entrer le suivant.'],
     },
   },
-  // Matroskin: a thrifty cat in a striped vest. Runs the game like a household.
-  matroskin: {
+  // Morkott: a thrifty cat in a striped vest. Runs the game like a household.
+  morkott: {
     ru: {
       greet: ['Садитесь. Только карты не мять, они денег стоят.', 'Я кот хозяйственный, у меня всё учтено.', 'Вход бесплатный. Пока.', 'Сдаю экономно: каждому ровно шесть.'],
       lead: ['Лишнюю сбуду.', 'Ненужное — вам, нужное — мне.'],

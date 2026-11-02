@@ -104,9 +104,10 @@ shows the neutral face, so every character needs at least one neutral picture, a
 those stands for them in the roster. To add a character, make their folder, add an entry to the
 roster, and cast them in `scripts/voices.mjs`.
 
-So that portraits change slowly rather than blink, a thinking picture stays for a few seconds
-after the move (`THINKING_HOLD_MS` in `src/ui/app.ts`), and a reaction stays for its full time
-even if that opponent has to move.
+A portrait changes with each event: thinking while that opponent decides, a reaction when
+something lands on them, neutral otherwise. The exception is whoever leads or defends the bout:
+they go back to thinking rather than neutral until the table is cleared, so as not to blink on
+every card, and take a new thinking picture with each of their moves.
 
 A character may also have a short film, `clip.webp` beside the portraits, as a sheet of square
 frames declared in the roster. The portrait zooms in to the film's framing, the film plays
