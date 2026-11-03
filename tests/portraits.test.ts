@@ -1,6 +1,7 @@
+import pictures from 'virtual:portraits';
 import { describe, expect, it } from 'vitest';
-import { CHARACTERS, Mood } from '../src/ui/characters';
-import { pickPicture, portraitUrl } from '../src/ui/portraits';
+import { CHARACTERS, Mood, characterById } from '../src/ui/characters';
+import { pickPicture, portraitUrl, viewsOf } from '../src/ui/portraits';
 
 const MOODS: Mood[] = ['neutral', 'thinking', 'pleased', 'happy', 'surprised', 'sad', 'angry', 'worried'];
 
@@ -13,6 +14,31 @@ describe('portraits', () => {
     for (const c of CHARACTERS) {
       for (const mood of MOODS) {
         expect(pickPicture(c, mood)).toMatch(new RegExp(`/${c.id}/(${mood}|neutral)_\\d\\.webp$`));
+      }
+    }
+  });
+
+  it('keeps the pictures of a second view to its own folder', () => {
+    for (const id of ['rita', 'sonya', 'sasha']) {
+      const c = characterById(id);
+      expect(viewsOf(c)).toEqual([id, `${id}/2`]);
+      expect(portraitUrl(c, `${id}/2`)).toMatch(new RegExp(`/${id}/2/neutral_\\d\\.webp$`));
+      for (const mood of MOODS) {
+        expect(pickPicture(c, mood, undefined, `${id}/2`)).toMatch(new RegExp(`/${id}/2/(${mood}|neutral)_\\d\\.webp$`));
+      }
+    }
+    expect(viewsOf(characterById('boris'))).toEqual(['boris']);
+  });
+
+  it('finds the picture a pipe smoker smokes in, with the bowl on it', () => {
+    const smokers = CHARACTERS.filter((c) => c.smoke);
+    expect(smokers.map((c) => c.id)).toContain('professor');
+    for (const c of smokers) {
+      const [, mood, n] = /^([a-z]+)_(\d)$/.exec(c.smoke!.picture)!;
+      expect(pictures[c.id]?.[mood!]).toContain(Number(n));
+      for (const at of [c.smoke!.x, c.smoke!.y]) {
+        expect(at).toBeGreaterThan(0);
+        expect(at).toBeLessThan(100);
       }
     }
   });

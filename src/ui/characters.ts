@@ -23,9 +23,12 @@ export interface Character {
   // pictures. `zoom` is how far into their neutral picture its first frame looks, as a scale and
   // a CSS background position in percent.
   clip?: { frames: number; columns: number; fps: number; zoom: { scale: number; x: number; y: number } };
+  // A pipe they smoke, played the way a clip is: `picture` is the one with the pipe in their mouth,
+  // and x and y are where its bowl is, in percent of that picture.
+  smoke?: { picture: string; x: number; y: number };
 }
 
-// Ordered from the strongest down. Boris is the only one at the top rating.
+// Ordered from the strongest down.
 export const CHARACTERS: Character[] = [
   {
     id: 'boris',
@@ -34,6 +37,48 @@ export const CHARACTERS: Character[] = [
     rating: 5,
     female: false,
     pitch: 0.7,
+  },
+  {
+    id: 'sasha',
+    name: { ru: 'Саша', en: 'Alex', fr: 'Alex' },
+    style: 'real',
+    rating: 5,
+    female: false,
+    pitch: 1.15,
+  },
+  {
+    id: 'professor',
+    name: { ru: 'Профессор', en: 'Professor', fr: 'Professeur' },
+    style: 'cartoon',
+    rating: 5,
+    female: false,
+    pitch: 0.8,
+    smoke: { picture: 'neutral_0', x: 35.5, y: 45.5 },
+  },
+  {
+    id: 'kruchyony',
+    name: { ru: 'Кручёный', en: 'Twister', fr: 'Tordu' },
+    style: 'cartoon',
+    rating: 5,
+    female: false,
+    pitch: 0.7,
+  },
+  {
+    id: 'fagot',
+    name: { ru: 'Фагот', en: 'Koroviev', fr: 'Fagot' },
+    style: 'fable',
+    rating: 5,
+    female: false,
+    pitch: 1.4,
+  },
+  {
+    id: 'satyr',
+    name: { ru: 'Леший', en: 'Satyr', fr: 'Satyre' },
+    style: 'fable',
+    rating: 5,
+    female: false,
+    pitch: 1.15,
+    clip: { frames: 120, columns: 8, fps: 12, zoom: { scale: 1.349, x: 50.1, y: 8.3 } },
   },
   {
     id: 'vera',
@@ -76,20 +121,28 @@ export const CHARACTERS: Character[] = [
     pitch: 0.75,
   },
   {
-    id: 'fagot',
-    name: { ru: 'Фагот', en: 'Koroviev', fr: 'Fagot' },
-    style: 'fable',
-    rating: 4,
-    female: false,
-    pitch: 1.4,
-  },
-  {
     id: 'gleb',
     name: { ru: 'Глеб', en: 'Gleb', fr: 'Gleb' },
     style: 'real',
     rating: 3,
     female: false,
     pitch: 0.95,
+  },
+  {
+    id: 'ivan',
+    name: { ru: 'Иван', en: 'Ivan', fr: 'Ivan' },
+    style: 'real',
+    rating: 3,
+    female: false,
+    pitch: 0.9,
+  },
+  {
+    id: 'masha',
+    name: { ru: 'Маша', en: 'Mary', fr: 'Marie' },
+    style: 'real',
+    rating: 3,
+    female: true,
+    pitch: 1.0,
   },
   {
     id: 'tamara',
@@ -106,6 +159,14 @@ export const CHARACTERS: Character[] = [
     rating: 3,
     female: false,
     pitch: 1.05,
+  },
+  {
+    id: 'byvaly',
+    name: { ru: 'Бывалый', en: 'Old Hand', fr: 'Briscard' },
+    style: 'cartoon',
+    rating: 3,
+    female: false,
+    pitch: 0.6,
   },
   {
     id: 'begemot',
@@ -140,6 +201,14 @@ export const CHARACTERS: Character[] = [
     pitch: 1.2,
   },
   {
+    id: 'max',
+    name: { ru: 'Макс', en: 'Max', fr: 'Max' },
+    style: 'real',
+    rating: 2,
+    female: false,
+    pitch: 0.75,
+  },
+  {
     id: 'fyodor',
     name: { ru: 'Фёдор', en: 'Fyodor', fr: 'Fiodor' },
     style: 'cartoon',
@@ -156,6 +225,14 @@ export const CHARACTERS: Character[] = [
     pitch: 1.35,
   },
   {
+    id: 'boss',
+    name: { ru: 'Босс', en: 'Boss', fr: 'Boss' },
+    style: 'cartoon',
+    rating: 2, // everyone always let him win, so he never learned
+    female: false,
+    pitch: 0.5,
+  },
+  {
     id: 'kikimora',
     name: { ru: 'Кикимора', en: 'Kikimora', fr: 'Kikimora' },
     style: 'fable',
@@ -170,15 +247,6 @@ export const CHARACTERS: Character[] = [
     rating: 1,
     female: false,
     pitch: 1.3,
-  },
-  {
-    id: 'satyr',
-    name: { ru: 'Леший', en: 'Satyr', fr: 'Satyre' },
-    style: 'fable',
-    rating: 1,
-    female: false,
-    pitch: 1.15,
-    clip: { frames: 120, columns: 8, fps: 12, zoom: { scale: 1.42, x: 51.6, y: 14.9 } },
   },
 ];
 

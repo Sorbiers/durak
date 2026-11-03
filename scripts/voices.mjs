@@ -73,6 +73,14 @@ const SILERO_CAST = {
   satyr: { speaker: 'aidar', pitch: 'high', tempo: 1.1 }, // quick and merry
   rita: { speaker: 'baya', pitch: 'low', tempo: 0.95 }, // cool, low, unhurried
   sonya: { speaker: 'kseniya', pitch: 'medium', tempo: 1.06 }, // young and chirpy
+  ivan: { speaker: 'eugene', pitch: 'medium', tempo: 1.0 }, // easy-going
+  masha: { speaker: 'xenia', pitch: 'low', tempo: 1.03 }, // an actress's full voice
+  max: { speaker: 'aidar', pitch: 'low', tempo: 1.04 }, // big and loud
+  sasha: { speaker: 'aidar', pitch: 'medium', tempo: 1.1 }, // young and hurried
+  professor: { speaker: 'eugene', pitch: 'medium', tempo: 0.9 }, // a lecturer's measured voice
+  byvaly: { speaker: 'aidar', pitch: 'x-low', tempo: 0.98 }, // old and husky
+  boss: { speaker: 'eugene', pitch: 'low', tempo: 0.88 }, // slow, and expects to be listened to
+  kruchyony: { speaker: 'aidar', pitch: 'medium', tempo: 0.96 }, // a sly drawl
 };
 // The text is prepared the way the Gogol project prepares its own (rut2s.js): stress is
 // marked with a plus sign before the stressed vowel, taken from Gogol's dictionary of 900,000
@@ -94,6 +102,10 @@ const STRESS = {
   белкам: 'б+елкам', белки: 'б+елки', гости: 'г+ости', леса: 'л+еса', места: 'м+еста',
   снегу: 'сн+егу', чащу: 'ч+ащу', поплутай: 'поплут+ай',
   ловите: 'лов+ите', держите: 'держ+ите', смотрите: 'смотр+ите', спешите: 'спеш+ите', никому: 'ником+у',
+  вечера: 'в+ечера', веса: 'в+еса', бою: 'бо+ю', судите: 'суд+ите', правило: 'пр+авило',
+  хорошей: 'хор+ошей',
+  исчерпана: 'исч+ерпана', мою: 'мо+ю', наше: 'н+аше', научитесь: 'науч+итесь', семьи: 'семь+и',
+  большие: 'больш+ие', будем: 'б+удем', руки: 'рук+и', звонок: 'звон+ок', тюрьмы: 'тюрьм+ы',
   // not in the dictionary
   отбито: 'отб+ито', предсказуемо: 'предсказ+уемо', потрачен: 'потр+ачен',
   ага: 'аг+а', бережливее: 'бережл+ивее', буду: 'б+уду', вами: 'в+ами', велено: 'в+елено',
@@ -104,9 +116,13 @@ const STRESS = {
   эндшпиль: '+эндшпиль', прикуп: 'пр+икуп', будешь: 'б+удешь', довесочек: 'дов+есочек',
   переадресован: 'переадрес+ован', неуд: 'н+еуд', сработано: 'сраб+отано', ними: 'н+ими',
   гостинчик: 'гост+инчик', опа: '+опа', вау: 'в+ау', стариковски: 'старик+овски',
+  подтверждено: 'подтвержден+о', квод: 'кв+од', эрат: '+эрат', демонстрандум: 'демонстр+андум',
+  иван: 'Ив+ан', наживное: 'нажив+ное', финишная: 'ф+инишная', перетренировался: 'перетрениров+ался',
   // wrong in the dictionary for the sense used here
   сочи: 'с+очи', // the town
   молодец: 'м+олодец', // the hero of a fairy tale
+  выигрывает: 'в+ыигрывает',
+  при: 'при', // unstressed, as in "ни при чём"
 };
 const VOWELS = /[аеёиоуыэюя]/i;
 let dictionary;
@@ -205,6 +221,14 @@ const PIPER_CAST = {
   satyr: { voice: 'ruslan', pitch: 1.05, pace: 0.9 },
   rita: { voice: 'irina', pitch: 0.95, pace: 1.04 },
   sonya: { voice: 'irina', pitch: 1.05, pace: 0.94 },
+  ivan: { voice: 'dmitri', pitch: 0.97, pace: 1.02 },
+  masha: { voice: 'irina', pitch: 0.98, pace: 0.97 },
+  max: { voice: 'ruslan', pitch: 0.97, pace: 0.96 },
+  sasha: { voice: 'denis', pitch: 1.07, pace: 0.93 },
+  professor: { voice: 'denis', pitch: 0.95, pace: 1.1 },
+  byvaly: { voice: 'ruslan', pitch: 0.92, pace: 1.06 },
+  boss: { voice: 'ruslan', pitch: 0.9, pace: 1.12 },
+  kruchyony: { voice: 'dmitri', pitch: 0.93, pace: 1.0 },
 };
 // Piper guesses the stress from plain text. Where it guesses wrong, the word is given with
 // an accent on the stressed vowel, which it obeys.

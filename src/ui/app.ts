@@ -26,10 +26,11 @@ import { AiClient } from './aiClient';
 import { createCard, isRed, suitSvg } from './cardView';
 import { CHARACTERS, Character, Mood, characterById } from './characters';
 import { playClip } from './clip';
+import { playSmoke } from './smoke';
 import { Lang, STRINGS, Strings, fill } from './i18n';
 import { Geometry, Place, computeLayout } from './layout';
 import { REMARK_CHANCE, Remark, plainRemark, remark } from './phrases';
-import { pickPicture, portraitUrl, preloadAvatars } from './portraits';
+import { pickPicture, portraitUrl, preloadAvatars, viewsOf } from './portraits';
 import { PAGE_LANG, PART_ROOT, ROOT, browserLang } from './root';
 import { audition, prepareVoices, releaseVoices, speak, stopSpeaking } from './speech';
 import { load, save } from './store';
@@ -44,6 +45,7 @@ type AvatarMode = 'static' | 'context';
 interface Settings {
   opponents: string[]; // character ids, clockwise from the player's left; one to three
   ratings: Record<string, Rating>; // strength chosen for a character in place of their usual one
+  views: Record<string, string>; // the view shown of a character who has two, such as 'sonya/2'
   transfer: boolean;
   firstBoutFive: boolean;
   // Who leads every game after the first: the previous winner, or the player to the fool's
@@ -104,6 +106,7 @@ interface Snapshot {
 const DEFAULTS: Settings = {
   opponents: ['lev'],
   ratings: {},
+  views: {},
   transfer: false,
   firstBoutFive: true,
   nextLead: 'fool',
@@ -209,8 +212,8 @@ export function startApp(): void {
   // The mood each seat's picture is showing, and the picture it last showed for each mood.
   let faces: { mood: Mood | null; shown: Partial<Record<Mood, string>> }[] = [];
   let lastNudge = -Infinity; // when an opponent last remarked on the player taking their time
-  let clipSeat = -1; // the seat whose portrait is playing its clip
-  let stopClip = (): void => {};
+  let jokeSeat = -1; // the seat whose portrait is playing its clip, or smoking its pipe
+  let stopJoke = (): void => {};
 
   const cardEls: HTMLElement[] = [];
   for (let c = 0; c < DECK_SIZE; c++) {
@@ -229,6 +232,9 @@ export function startApp(): void {
   const isOut = (p: number): boolean => game.hands[p].length === 0 && game.deck.length === 0;
   /** The character in an opponent's seat (seats 1 and up). */
   const who = (seat: number): Character => characterById(settings.opponents[seat - 1]);
+  /** The view a character is shown in: the one the player last switched to, else their own. */
+  const viewOf = (c: Character): string =>
+    viewsOf(c).includes(settings.views[c.id] ?? '') ? settings.views[c.id]! : c.id;
   /** How strongly a character plays: the player's choice if they made one, else their usual. */
   const ratingOf = (c: Character): Rating => {
     const chosen = settings.ratings[c.id];
@@ -294,7 +300,9 @@ export function startApp(): void {
     faces = Array.from({ length: n }, () => ({ mood: null, shown: {} }));
     stopSpeaking();
     if (settings.speech) prepareVoices(settings.opponents.map(characterById), settings.lang);
-    if (settings.portraits) settings.opponents.forEach((o) => preloadAvatars(characterById(o)));
+    if (settings.portraits) {
+      for (const c of settings.opponents.map(characterById)) viewsOf(c).forEach((view) => preloadAvatars(c, view));
+    }
     buildSeats();
 
     // Gather every card on the deck first, then let the deal fly out from there.
@@ -430,7 +438,7 @@ export function startApp(): void {
       if (waiting.length === 0) return;
       lastNudge = now;
       react(waiting[(Math.random() * waiting.length) | 0], 'waiting');
-      for (const seat of waiting) startClip(seat);
+      for (const seat of waiting) startJoke(seat);
     }, 40_000);
   }
 
@@ -789,34 +797,51 @@ export function startApp(): void {
     const mood = moodOf(seat);
     if (face.mood !== mood) {
       face.mood = mood;
-      face.shown[mood] = pickPicture(who(seat), mood, face.shown[mood]);
+      face.shown[mood] = pickPicture(who(seat), mood, face.shown[mood], viewOf(who(seat)));
     }
     return face.shown[mood]!;
   }
 
-  /** A portrait may play its clip while it moves with the game and the seat has nothing to do. */
-  const clipAllowed = (seat: number): boolean =>
+  /**
+   * A portrait may play its joke, a clip or a pipe, while it moves with the game and the seat has
+   * nothing to do.
+   */
+  const jokeAllowed = (seat: number): boolean =>
     settings.portraits &&
     settings.avatars === 'context' &&
     game.phase !== OVER &&
     game.turn !== seat &&
     !reducedMotion();
 
-  function startClip(seat: number): void {
+  function startJoke(seat: number): void {
     const c = who(seat);
-    if (!c.clip || clipSeat >= 0 || !clipAllowed(seat)) return;
-    clipSeat = seat;
+    if (!(c.clip || c.smoke) || jokeSeat >= 0 || !jokeAllowed(seat)) return;
+    jokeSeat = seat;
     const avatar = avatarEls[seat]!;
-    stopClip = playClip(
+    stopJoke = (c.clip ? playClip : playSmoke)(
       avatar,
       c,
       (src) => changePicture(avatar, src),
       () => {
-        if (clipSeat !== seat) return; // the seats have been rebuilt
-        clipSeat = -1;
+        if (jokeSeat !== seat) return; // the seats have been rebuilt
+        jokeSeat = -1;
         renderSeats();
       },
     );
+  }
+
+  /**
+   * A character seen two ways, up close and at the table, turns to their other view when their
+   * portrait is clicked. The view they are left in is kept for the games after.
+   */
+  function switchView(seat: number): void {
+    const c = who(seat);
+    const views = viewsOf(c);
+    const view = views[(views.indexOf(viewOf(c)) + 1) % views.length]!;
+    settings = { ...settings, views: { ...settings.views, [c.id]: view } };
+    save('durak.settings', settings);
+    faces[seat] = { mood: null, shown: {} };
+    renderSeats();
   }
 
   /**
@@ -888,8 +913,8 @@ export function startApp(): void {
   }
 
   function buildSeats(): void {
-    clipSeat = -1;
-    stopClip();
+    jokeSeat = -1;
+    stopJoke();
     seatsLayer.innerHTML = '';
     seatEls = [];
     avatarEls = [];
@@ -903,9 +928,16 @@ export function startApp(): void {
         avatar.className = 'avatar';
         avatar.alt = '';
         avatar.draggable = false;
-        if (who(p).clip) {
-          avatar.classList.add('has-clip');
-          avatar.addEventListener('mouseenter', () => startClip(p));
+        if (who(p).clip || who(p).smoke) {
+          avatar.classList.add('has-joke');
+          avatar.addEventListener('mouseenter', () => startJoke(p));
+        }
+        if (viewsOf(who(p)).length > 1) {
+          avatar.classList.add('has-views');
+          avatar.addEventListener('click', (e) => {
+            e.stopPropagation(); // not a click on the table, which would let go of the chosen cards
+            switchView(p);
+          });
         }
         seatsLayer.appendChild(avatar);
         role = document.createElement('div');
@@ -1049,7 +1081,7 @@ export function startApp(): void {
 
   function renderSeats(): void {
     const over = game.phase === OVER;
-    if (clipSeat >= 0 && !clipAllowed(clipSeat)) stopClip();
+    if (jokeSeat >= 0 && !jokeAllowed(jokeSeat)) stopJoke();
     for (let p = 0; p < seatEls.length; p++) {
       const el = seatEls[p];
       const at = geo.seats[p];
@@ -1064,7 +1096,7 @@ export function startApp(): void {
           avatar.style.left = `${spot.x - spot.size / 2}px`;
           avatar.style.top = `${spot.y - spot.size / 2}px`;
           avatar.style.width = avatar.style.height = `${spot.size}px`;
-          if (clipSeat !== p) {
+          if (jokeSeat !== p) {
             const src = faceOf(p);
             if (avatar.getAttribute('src') !== src) changePicture(avatar, src);
           }

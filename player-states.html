@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Player States</title>
+<style>
+  :root { color-scheme: dark; --ground: #1b110b; --panel: #261a12; --line: rgba(216, 178, 106, 0.28); --brass: #d8b26a; --ivory: #f5eedd; --dim: rgba(245, 238, 221, 0.62); --alert: #f0a37a; --felt: #1d5a43; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--ground); color: var(--ivory); font: 14px/1.35 system-ui, sans-serif; }
+  h1 { margin: 0 0 2px; font: 400 24px Georgia, serif; color: var(--brass); }
+  p { margin: 0 0 12px; color: var(--dim); max-width: 90ch; }
+
+  .test { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+  .stages { display: flex; align-items: flex-end; gap: 16px; padding: 14px; border-radius: 8px; background: var(--felt); }
+  figure { margin: 0; }
+  figcaption { margin-top: 6px; font-size: 11px; text-align: center; color: rgba(245, 238, 221, 0.8); }
+  .stage { position: relative; width: var(--size); height: var(--size); border-radius: 12%; box-shadow: 0 0 0 2px rgba(216, 178, 106, 0.55), 0 6px 16px rgba(0, 0, 0, 0.45); }
+  .stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 12%; background: var(--ivory); }
+  .controls { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+  .line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .line > span:first-child { width: 58px; color: var(--dim); }
+  select, button { font: inherit; color: var(--ivory); background: var(--ground); border: 1px solid var(--line); border-radius: 7px; padding: 6px 10px; }
+  select:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid #8fd0ff; outline-offset: 1px; }
+  button { cursor: pointer; }
+  button:hover { border-color: var(--brass); }
+  button.cur, #auto.on { background: var(--brass); border-color: var(--brass); color: #2a1a0e; font-weight: 600; }
+  input[type='range'] { flex: 1 1 140px; min-width: 100px; max-width: 280px; accent-color: var(--brass); }
+  output { min-width: 62px; font-variant-numeric: tabular-nums; }
+  #status { margin: 0; font-variant-numeric: tabular-nums; color: var(--dim); }
+
+  .wrap { overflow: auto; max-height: 70vh; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: separate; border-spacing: 0; }
+  th, td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; text-align: center; }
+  thead th { position: sticky; top: 0; z-index: 3; background: var(--panel); color: var(--brass); font-weight: 600; min-width: 136px; }
+  thead th:first-child { z-index: 4; left: 0; min-width: 118px; }
+  small { display: block; margin-top: 3px; font-size: 11px; font-weight: 400; color: var(--dim); }
+  tbody th { position: sticky; left: 0; z-index: 2; background: var(--panel); text-align: left; font-weight: 400; }
+  tbody th span, tbody th code { display: block; }
+  .name { font: 400 18px Georgia, serif; color: var(--brass); }
+  .stars { color: var(--brass); font-size: 12px; }
+  code { margin-top: 3px; font-size: 11px; color: var(--dim); }
+  .clip { margin-top: 3px; font-size: 11px; color: var(--alert); }
+  .group th { position: static; padding: 12px 8px 6px; background: var(--ground); text-align: left; }
+  .group span { position: sticky; left: 8px; font: 400 18px Georgia, serif; color: var(--ivory); }
+  .pics { display: flex; gap: 8px; }
+  td img { display: block; width: 120px; height: 120px; border-radius: 8px; background: var(--ivory); cursor: pointer; }
+  td img:hover { box-shadow: 0 0 0 2px var(--brass); }
+  td img.cur { box-shadow: 0 0 0 3px var(--brass); }
+  .none { width: 120px; color: var(--alert); font-size: 12px; }
+
+  /* Tall enough: the test stays in view and the table scrolls under it. */
+  @media (min-width: 800px) and (min-height: 700px) {
+    body { height: 100vh; display: flex; flex-direction: column; }
+    .wrap { flex: 1 1 auto; min-height: 0; max-height: none; }
+  }
+</style>
+</head>
+<body>
+<h1>Player states</h1>
+<p>Every picture in public/avatars, read from the folders, so a file you add or remove shows here at once. A second view of a character, such as sonya/2, has a row of its own. A mood button picks at random, as the game does, never the same picture twice running. Click any picture to swap to it.</p>
+
+<section class="test" aria-label="Swap test">
+  <div class="stages">
+    <figure><div class="stage" style="--size:240px"><img class="base" alt=""></div><figcaption>Largest size</figcaption></figure>
+    <figure><div class="stage" style="--size:113px"><img class="base" alt=""></div><figcaption>Small</figcaption></figure>
+  </div>
+  <div class="controls">
+    <div class="line"><span>Player</span><select id="player"></select><button type="button" id="auto">Auto</button></div>
+    <div class="line"><span>Mood</span><span id="moods" class="line"></span></div>
+    <div class="line"><span>Swap</span><input id="swap" type="range" min="0" max="2000" step="50"><output id="swap-out"></output><small id="swap-note"></small></div>
+    <div class="line"><span>Hold</span><input id="hold" type="range" min="200" max="4000" step="100" value="1200"><output id="hold-out"></output><small>time on each mood in Auto</small></div>
+    <p id="status" role="status"></p>
+  </div>
+</section>
+
+<div class="wrap"><table><thead id="head"></thead><tbody id="body"></tbody></table></div>
+
+<script type="module">
+  import pictures from 'virtual:portraits';
+  import appSource from '/src/ui/app.ts?raw';
+  import { CHARACTERS } from '/src/ui/characters.ts';
+
+  const MOODS = [
+    ['neutral', 'default'],
+    ['thinking', 'working out a move'],
+    ['pleased', 'passed an attack on, or made someone pick up'],
+    ['happy', 'out of cards, or you lost'],
+    ['surprised', 'an attack was passed on to them'],
+    ['sad', 'picks up, ending under 9 cards'],
+    ['angry', 'lost the game'],
+    ['worried', 'picks up, ending with 9 or more'],
+  ];
+  const GROUPS = [['real', 'Realistic'], ['cartoon', 'Caricature'], ['fable', 'Fabled']];
+  const GAME_SWAP = Number(/const SWAP_MS = (\d+)/.exec(appSource)[1]);
+  const $ = (id) => document.getElementById(id);
+  const bases = [...document.querySelectorAll('img.base')];
+  const fileOf = (mood, n) => `${mood}_${n}.webp`;
+  const urlOf = (id, mood, n) => `/avatars/${id}/${fileOf(mood, n)}`;
+  const numbers = (id, mood) => pictures[id]?.[mood] ?? [];
+  /** A character's folders: their own, then any further view of them, such as sonya/2. */
+  const viewsOf = (c) => [c.id, ...Object.keys(pictures).filter((v) => v.startsWith(`${c.id}/`)).sort()];
+
+  // A mood with no pictures shows the neutral face, as in the game.
+  const choicesFor = (id, mood) =>
+    numbers(id, mood).length ? numbers(id, mood).map((n) => [mood, n]) : numbers(id, 'neutral').map((n) => ['neutral', n]);
+
+  $('head').innerHTML =
+    `<tr><th scope="col">Player</th>` +
+    MOODS.map(([m, when]) => `<th scope="col">${m}<small>${when}</small></th>`).join('') +
+    `</tr>`;
+
+  const cell = (id, mood) => {
+    const list = numbers(id, mood);
+    if (!list.length) return `<td><div class="none">no pictures: shows neutral</div></td>`;
+    return `<td><div class="pics">${list
+      .map((n) => `<div><img loading="lazy" src="${urlOf(id, mood, n)}" alt="${id} ${mood} ${n}" data-id="${id}" data-mood="${mood}" data-n="${n}"><small>${fileOf(mood, n)}</small></div>`)
+      .join('')}</div></td>`;
+  };
+  const row = (c, view) =>
+    `<tr data-player="${view}"><th scope="row"><span class="name">${c.name.ru}</span><span>${c.name.en}</span>` +
+    `<span class="stars">${'★'.repeat(c.rating)}</span><code>${view}</code>` +
+    (view !== c.id ? `<span class="clip">second view</span>` : '') +
+    (c.clip ? `<span class="clip">+ clip.webp, ${c.clip.frames} frames</span>` : '') +
+    (c.smoke && view === c.id ? `<span class="clip">+ pipe smoke, from ${c.smoke.picture}</span>` : '') +
+    `</th>${MOODS.map(([m]) => cell(view, m)).join('')}</tr>`;
+  $('body').innerHTML = GROUPS.map(([style, title]) => {
+    const group = CHARACTERS.filter((c) => c.style === style);
+    return `<tr class="group"><th scope="rowgroup" colspan="${MOODS.length + 1}"><span>${title} · ${group.length}</span></th></tr>` +
+      group.flatMap((c) => viewsOf(c).map((view) => row(c, view))).join('');
+  }).join('');
+  $('player').innerHTML = GROUPS.map(([style, title]) =>
+    `<optgroup label="${title}">${CHARACTERS.filter((c) => c.style === style)
+      .flatMap((c) => viewsOf(c).map((view) => `<option value="${view}">${c.name.ru} / ${c.name.en}${view === c.id ? '' : ' · ' + view}</option>`))
+      .join('')}</optgroup>`,
+  ).join('');
+  $('moods').innerHTML = MOODS.map(([m]) => `<button type="button" data-mood="${m}"></button>`).join('');
+  const buttons = [...document.querySelectorAll('[data-mood]')].filter((b) => b.tagName === 'BUTTON');
+
+  let player = 'boris';
+  let shown = null; // the picture on show, as its address
+  let last = {}; // the picture each mood showed last
+  let timer = 0;
+
+  /** The same dissolve as changePicture in src/ui/app.ts: the old picture stays on top and fades. */
+  function change(base, src) {
+    if (base.hasAttribute('src')) {
+      const old = base.cloneNode();
+      old.classList.remove('base');
+      base.after(old);
+      const fade = old.animate({ opacity: 0 }, { duration: Number($('swap').value), easing: 'ease-in-out', fill: 'forwards' });
+      fade.onfinish = () => old.remove();
+    }
+    base.src = src;
+  }
+
+  function show(mood, realMood, n, dissolve) {
+    const src = urlOf(player, realMood, n);
+    const from = shown;
+    if (src !== from) for (const base of bases) dissolve ? change(base, src) : (base.src = src);
+    shown = src;
+    last[mood] = src;
+    for (const img of document.querySelectorAll('td img.cur')) img.classList.remove('cur');
+    document.querySelector(`td img[data-id="${player}"][data-mood="${realMood}"][data-n="${n}"]`)?.classList.add('cur');
+    for (const b of buttons) b.classList.toggle('cur', b.dataset.mood === mood);
+    const count = choicesFor(player, mood).length;
+    $('status').textContent =
+      `${player}, ${mood}: ` +
+      (from && from !== src && from.includes(`/${player}/`) ? `${from.split('/').pop()} → ` : '') +
+      `${fileOf(realMood, n)} (${count} to choose from)`;
+  }
+
+  /** As pickPicture in src/ui/portraits.ts. */
+  function pick(mood, dissolve) {
+    const all = choicesFor(player, mood);
+    const choices = all.length > 1 ? all.filter(([m, n]) => urlOf(player, m, n) !== last[mood]) : all;
+    const [realMood, n] = choices[Math.floor(Math.random() * choices.length)];
+    show(mood, realMood, n, dissolve);
+  }
+
+  function choosePlayer(id) {
+    player = id;
+    last = {};
+    $('player').value = id;
+    for (const b of buttons) b.textContent = `${b.dataset.mood} · ${numbers(id, b.dataset.mood).length}`;
+    pick('neutral', false);
+  }
+
+  function stopAuto() {
+    clearTimeout(timer);
+    timer = 0;
+    $('auto').classList.remove('on');
+    $('auto').textContent = 'Auto';
+  }
+
+  function step() {
+    const at = buttons.findIndex((b) => b.classList.contains('cur'));
+    pick(buttons[(at + 1) % buttons.length].dataset.mood, true);
+    timer = setTimeout(step, Number($('swap').value) + Number($('hold').value));
+  }
+
+  $('player').addEventListener('change', (e) => {
+    stopAuto();
+    choosePlayer(e.target.value);
+    document.querySelector(`tr[data-player="${player}"]`).scrollIntoView({ block: 'nearest' });
+  });
+  $('moods').addEventListener('click', (e) => {
+    const mood = e.target.closest('[data-mood]')?.dataset.mood;
+    if (!mood) return;
+    stopAuto();
+    pick(mood, true);
+  });
+  $('auto').addEventListener('click', () => {
+    if (timer) {
+      stopAuto();
+      return;
+    }
+    $('auto').classList.add('on');
+    $('auto').textContent = 'Stop';
+    step();
+  });
+  document.querySelector('.wrap').addEventListener('click', (e) => {
+    const img = e.target.closest('td img[data-mood]');
+    if (!img) return;
+    stopAuto();
+    if (img.dataset.id !== player) choosePlayer(img.dataset.id);
+    show(img.dataset.mood, img.dataset.mood, Number(img.dataset.n), true);
+  });
+  $('swap').value = GAME_SWAP;
+  $('swap-note').textContent = `the game uses ${GAME_SWAP} ms`;
+  for (const id of ['swap', 'hold']) {
+    const write = () => { $(`${id}-out`).textContent = `${$(id).value} ms`; };
+    $(id).addEventListener('input', write);
+    write();
+  }
+  choosePlayer(player);
+</script>
+</body>
+</html>

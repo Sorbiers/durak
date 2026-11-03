@@ -191,6 +191,8 @@ const at = (path: string): string => fileURLToPath(new URL(path, import.meta.url
 // A page cannot list a folder, so which pictures each character has is read from their folders
 // here, <mood>_<0..9>.webp, and handed to the game as the module `virtual:portraits`. Adding or
 // removing a picture is all it takes, and the dev server reloads the page when that happens.
+// A numbered folder inside a character's own, such as sonya/2, is a second view of them, taken
+// from further off or closer in; it is listed under that path.
 function portraits(): Plugin {
   const name = 'virtual:portraits';
   const resolved = `\0${name}`;
@@ -201,15 +203,18 @@ function portraits(): Plugin {
     load(id) {
       if (id !== resolved) return undefined;
       const found: Record<string, Record<string, number[]>> = {};
-      for (const entry of readdirSync(folder, { withFileTypes: true })) {
-        if (!entry.isDirectory()) continue;
+      const read = (path: string): void => {
         const moods: Record<string, number[]> = {};
-        for (const file of readdirSync(`${folder}/${entry.name}`).sort()) {
-          const m = /^([a-z]+)_(\d)\.webp$/.exec(file);
+        for (const entry of readdirSync(`${folder}/${path}`, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : 1))) {
+          if (entry.isDirectory() && /^\d$/.test(entry.name)) read(`${path}/${entry.name}`);
+          const m = /^([a-z]+)_(\d)\.webp$/.exec(entry.name);
           if (m) (moods[m[1]!] ??= []).push(Number(m[2]));
         }
-        if (!moods.neutral) this.error(`public/avatars/${entry.name} has no neutral_<0..9>.webp`);
-        found[entry.name] = moods;
+        if (!moods.neutral) this.error(`public/avatars/${path} has no neutral_<0..9>.webp`);
+        found[path] = moods;
+      };
+      for (const entry of readdirSync(folder, { withFileTypes: true })) {
+        if (entry.isDirectory()) read(entry.name);
       }
       return `export default ${JSON.stringify(found)};`;
     },

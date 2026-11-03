@@ -6,8 +6,8 @@ Play it at https://podkidnoy.online/.
 ![The table in a four-player game: three opponents with portraits, two cards to beat, the discard pile, and the playable cards of the hand picked out](docs/screenshot.jpg)
 
 - Подкидной and переводной, 36 cards, 2 to 4 players.
-- Nineteen named opponents in three groups, realistic, caricature and fabled, each with a skill
-  rating from one to five stars. Pick one to three of them by face or by strength.
+- Twenty-seven named opponents in three groups, realistic, caricature and fabled, each with a
+  skill rating from one to five stars. Pick one to three of them by face or by strength.
 - Optional portraits that react to the game, remarks in each character's own voice, and
   reading the remarks aloud.
 - A hint button that shows what the strong player would do in your seat (optional).
@@ -110,6 +110,15 @@ shows the neutral face, so every character needs at least one neutral picture, a
 those stands for them in the roster. To add a character, make their folder, add an entry to the
 roster, and cast them in `scripts/voices.mjs`.
 
+A character may be seen two ways, say up close and from across the table: the second set of
+pictures goes in a numbered folder inside their own, `public/avatars/<id>/2/`, named the same
+way. The roster shows their own pictures. At the table a click on their portrait switches to the
+other view, for every mood, and the game remembers which one they were left in. Rita, Sonya and
+Sasha have two views: up close in their own folder, and at the table in `2/`.
+
+`characters.bat` opens `player-states.html` on the dev server: every picture of every opponent,
+a row for each view, mood by mood, with a test of how one picture dissolves into the next.
+
 A portrait changes with each event: thinking while that opponent decides, a reaction when
 something lands on them, neutral otherwise. The exception is whoever leads or defends the bout:
 they go back to thinking rather than neutral until the table is cleared, so as not to blink on
@@ -121,6 +130,11 @@ forward and then back, and the portrait zooms out again. This happens when the p
 the portrait while that character has nothing to do, and when the player has been thinking for a
 long time. Only the Satyr has one, and it is fetched only when first wanted. It does not play
 with the portraits set to stay still, or where the system asks for reduced motion.
+
+The Professor smokes his pipe instead, at the same moments and on the same terms: his portrait
+turns to the picture with the pipe in his mouth, and grey wisps rise from the bowl for a few
+seconds, the way steam rises from a cup, before his own face comes back (`src/ui/smoke.ts`, and
+`.smoke` in the stylesheet). The roster names that picture and where the bowl is on it.
 
 Russian remarks are spoken from clips in `public/voices/`, recorded ahead of time by a free
 speech engine running locally. `npm run voices` records whatever is missing after lines are
