@@ -27,7 +27,7 @@ import { createCard, isRed, suitSvg } from './cardView';
 import { CHARACTERS, Character, Mood, characterById } from './characters';
 import { playClip } from './clip';
 import { playSmoke } from './smoke';
-import { Lang, STRINGS, Strings, fill } from './i18n';
+import { Lang, STRINGS, Strings, fill, heading } from './i18n';
 import { Geometry, Place, computeLayout } from './layout';
 import { REMARK_CHANCE, Remark, plainRemark, remark } from './phrases';
 import { pickPicture, portraitUrl, preloadAvatars, viewsOf } from './portraits';
@@ -1307,9 +1307,8 @@ export function startApp(): void {
   function renderBar(): void {
     document.documentElement.lang = settings.lang;
     document.title = PAGES[settings.lang].title;
-    $('brand').textContent = t.title;
+    $('brand').innerHTML = heading(t, settings.transfer, (mode) => `<span class="mode">${mode}</span>`);
     $('meta').innerHTML =
-      `<span>${settings.transfer ? t.transfer : t.simple}</span>` +
       `<span class="trump-chip ${isRed(game.trump) ? 'red' : 'black'}">${t.trump} ${suitSvg(game.trump)}</span>`;
     const games = tallies[tallyKey()]?.games ?? 0;
     $('score').textContent = games > 0 ? fill(t.tally, { games }) : '';

@@ -5,6 +5,7 @@ const en = {
   transfer: 'Perevodnoy',
   trump: 'Trump',
   title: 'Durak',
+  heading: '{Mode} Durak', // the bar's heading; {Mode} is the variant as written, {mode} in small letters
   about: 'About',
   newGame: 'New deal',
   settings: 'Settings',
@@ -145,6 +146,7 @@ const ru: typeof en = {
   transfer: 'Переводной',
   trump: 'Козырь',
   title: 'Дурак',
+  heading: '{Mode} дурак',
   about: 'Об игре',
   newGame: 'Новая раздача',
   settings: 'Настройки',
@@ -284,6 +286,7 @@ const fr: typeof en = {
   transfer: 'Perevodnoï',
   trump: 'Atout',
   title: 'Dourak',
+  heading: 'Dourak {mode}',
   about: 'À propos',
   newGame: 'Nouvelle donne',
   settings: 'Réglages',
@@ -420,6 +423,15 @@ const fr: typeof en = {
 
 export type Strings = typeof en;
 export const STRINGS: Record<Lang, Strings> = { en, ru, fr };
+
+/**
+ * The game's name with its variant, as the bar shows it: «Подкидной дурак». `mark` wraps the
+ * variant, so that a narrow bar can leave it out and show the name alone.
+ */
+export function heading(t: Strings, transfer: boolean, mark = (s: string): string => s): string {
+  const mode = transfer ? t.transfer : t.simple;
+  return t.heading.replace('{Mode}', mark(mode)).replace('{mode}', mark(mode.toLowerCase()));
+}
 
 export function fill(template: string, values: Record<string, string | number>): string {
   return template.replace(/\{(\w+)\}/g, (_, k: string) => String(values[k] ?? ''));

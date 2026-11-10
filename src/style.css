@@ -1530,9 +1530,13 @@ dialog .buttons [data-act='reset'] {
   .brand {
     font-size: 24px;
   }
+  /* The variant in the heading gives way, and «Подкидной дурак» is «Дурак». */
   .score,
-  .meta > span:first-child {
+  .brand .mode {
     display: none;
+  }
+  .brand::first-letter {
+    text-transform: uppercase;
   }
   .ghost {
     padding: 5px 8px;

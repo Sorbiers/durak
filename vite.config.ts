@@ -4,7 +4,7 @@ import { defineConfig, type Plugin } from 'vite';
 import { FORTUNE_PAGES } from './src/fortune/seo';
 import { TEXTS as FORTUNE_TEXTS } from './src/fortune/i18n';
 import { LANGS, PAGES, SITE, type PageLang, type PageText, otherLangs } from './src/seo';
-import { STRINGS } from './src/ui/i18n';
+import { STRINGS, heading } from './src/ui/i18n';
 
 // The site has two parts, each a single page: the game, served at the site root, and the
 // fortune-telling, in fortune/. Each is written out at four addresses: its own folder, which
@@ -18,7 +18,17 @@ type Variant = 'root' | PageLang;
 const LOCALE: Record<PageLang, string> = { ru: 'ru_RU', en: 'en_US', fr: 'fr_FR' };
 const SITE_NAME = 'Podkidnoy';
 // Names the game is also found by — promoted in the structured data for search engines.
-const ALT_NAMES = ['Podkidnoy Durak', 'Подкидной дурак', 'Durak online', 'Дурак онлайн', 'Dourak', 'Дурак', 'Durak'];
+const ALT_NAMES = [
+  'Podkidnoy Durak',
+  'Podkidnoy Durak online',
+  'Подкидной дурак',
+  'Подкидной дурак онлайн',
+  'Durak online',
+  'Дурак онлайн',
+  'Dourak',
+  'Дурак',
+  'Durak',
+];
 
 interface Part {
   dir: string; // its folder under the site root: '' for the game
@@ -36,15 +46,16 @@ const GAME: Part = {
   image: (lang) => `og-${lang}.jpg`,
   data: (lang) => ({
     '@type': ['VideoGame', 'WebApplication'],
-    name: STRINGS[lang].title,
+    name: heading(STRINGS[lang], false),
     alternateName: [...new Set([...otherLangs(lang).map((l) => STRINGS[l].title), ...ALT_NAMES])].filter(
-      (n) => n !== STRINGS[lang].title,
+      (n) => n !== heading(STRINGS[lang], false),
     ),
     genre: 'Card game',
     playMode: 'SinglePlayer',
     applicationCategory: 'GameApplication',
   }),
-  slots: (lang) => ({ brand: STRINGS[lang].title, about: STRINGS[lang].about, close: STRINGS[lang].close }),
+  // The heading as a first deal shows it, in the plain game.
+  slots: (lang) => ({ brand: heading(STRINGS[lang], false), about: STRINGS[lang].about, close: STRINGS[lang].close }),
 };
 
 const FORTUNE: Part = {
