@@ -10,7 +10,10 @@ import { STRINGS } from './src/ui/i18n';
 // fortune-telling, in fortune/. Each is written out at four addresses: its own folder, which
 // picks the language from the browser, and ru/, en/ and fr/ inside it, one language each. Search
 // engines list a page by what its HTML says before any script runs, so every address gets its
-// own title, description and texts, and names the others as its translations.
+// own title, description and texts, and names the others as its translations. Before any script
+// runs, the part's folder is its English page word for word, so it names en/ as the one address
+// to list, and en/ also stands for any language without a page of its own; listed both, the two
+// were duplicates, and Google chose between them itself.
 type Variant = 'root' | PageLang;
 const LOCALE: Record<PageLang, string> = { ru: 'ru_RU', en: 'en_US', fr: 'fr_FR' };
 const SITE_NAME = 'Podkidnoy';
@@ -65,6 +68,8 @@ const FORTUNE: Part = {
 const PARTS = [GAME, FORTUNE];
 
 const urlOf = (v: Variant, part: Part): string => `${SITE}${part.dir}${v === 'root' ? '' : `${v}/`}`;
+/** The address a search engine should list for an address: its own, but en/ for the folder. */
+const canonicalOf = (v: Variant, part: Part): string => urlOf(v === 'root' ? 'en' : v, part);
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
@@ -76,7 +81,7 @@ function head(v: Variant, part: Part): string {
   const data = {
     '@context': 'https://schema.org',
     ...part.data(lang),
-    url: urlOf(v, part),
+    url: canonicalOf(v, part),
     description,
     image,
     inLanguage: LANGS,
@@ -86,9 +91,9 @@ function head(v: Variant, part: Part): string {
   return [
     `<title>${esc(title)}</title>`,
     `<meta name="description" content="${esc(description)}" />`,
-    `<link rel="canonical" href="${urlOf(v, part)}" />`,
+    `<link rel="canonical" href="${canonicalOf(v, part)}" />`,
     ...LANGS.map((l) => `<link rel="alternate" hreflang="${l}" href="${urlOf(l, part)}" />`),
-    `<link rel="alternate" hreflang="x-default" href="${urlOf('root', part)}" />`,
+    `<link rel="alternate" hreflang="x-default" href="${urlOf('en', part)}" />`,
     `<link rel="icon" href="${up}favicon.ico" sizes="32x32" />`,
     `<link rel="icon" href="${up}favicon.svg" type="image/svg+xml" />`,
     `<link rel="apple-touch-icon" href="${up}apple-touch-icon.png" />`,
@@ -97,7 +102,7 @@ function head(v: Variant, part: Part): string {
     `<meta property="og:site_name" content="${SITE_NAME}" />`,
     `<meta property="og:title" content="${esc(title)}" />`,
     `<meta property="og:description" content="${esc(description)}" />`,
-    `<meta property="og:url" content="${urlOf(v, part)}" />`,
+    `<meta property="og:url" content="${canonicalOf(v, part)}" />`,
     `<meta property="og:locale" content="${LOCALE[lang]}" />`,
     ...otherLangs(lang).map((l) => `<meta property="og:locale:alternate" content="${LOCALE[l]}" />`),
     `<meta property="og:image" content="${image}" />`,
@@ -112,8 +117,9 @@ function head(v: Variant, part: Part): string {
 /** Fills in what the page says about itself, for one address. */
 function localize(html: string, v: Variant, part: Part): string {
   const lang: PageLang = v === 'root' ? 'en' : v;
-  // The slots of the page: [[name]] in its HTML is replaced by the text of that name.
-  const slots = part.slots(lang);
+  // The slots of the page: [[name]] in its HTML is replaced by the text of that name. [[here]] is
+  // the language folder of this address, so that a link to the other part keeps the language.
+  const slots = { ...part.slots(lang), here: v === 'root' ? '' : `${v}/` };
   // The language switch: a link to the page in each of the other languages.
   const switchTo = (cls: string): string =>
     otherLangs(lang)
@@ -129,13 +135,14 @@ function localize(html: string, v: Variant, part: Part): string {
   return v === 'root' ? out : out.replace(/\b(src|href)="(\.\.?)\//g, (_, attr, dots) => `${attr}="${dots === '.' ? '..' : '../..'}/`);
 }
 
+/** The language addresses of both parts; a part's folder is not listed, as it names en/ instead. */
 function sitemap(): string {
   const today = new Date().toISOString().slice(0, 10);
   const urls = PARTS.flatMap((part) => {
     const links =
       LANGS.map((l) => `    <xhtml:link rel="alternate" hreflang="${l}" href="${urlOf(l, part)}" />`).join('\n') +
-      `\n    <xhtml:link rel="alternate" hreflang="x-default" href="${urlOf('root', part)}" />`;
-    return (['root', ...LANGS] as Variant[]).map(
+      `\n    <xhtml:link rel="alternate" hreflang="x-default" href="${urlOf('en', part)}" />`;
+    return LANGS.map(
       (v) => `  <url>\n    <loc>${urlOf(v, part)}</loc>\n    <lastmod>${today}</lastmod>\n${links}\n  </url>`,
     );
   }).join('\n');

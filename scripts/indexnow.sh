@@ -7,12 +7,11 @@ set -euo pipefail
 
 HOST="podkidnoy.online"
 KEY="468b9f4ed74c92e318085838fcdb05ff"   # keep in sync with public/<KEY>.txt
+# The language addresses only: the bare / and /fortune/ name en/ as the address to list.
 URLS=(
-  "https://$HOST/"
   "https://$HOST/ru/"
   "https://$HOST/en/"
   "https://$HOST/fr/"
-  "https://$HOST/fortune/"
   "https://$HOST/fortune/ru/"
   "https://$HOST/fortune/en/"
   "https://$HOST/fortune/fr/"

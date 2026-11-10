@@ -234,8 +234,11 @@ shared, at the site root.
 
 Each is written out at four addresses: its folder, which picks the language from the browser, and
 `ru/`, `en/` and `fr/` inside it, one language each. Every address has its own title, description
-and texts in its HTML, names the others as translations, and is listed in `sitemap.xml`, which
-the build also writes. The texts and the site's address live in `src/seo.ts` (the game) and
+and texts in its HTML and names the others as translations. Before its script runs, the folder
+is the English page word for word, so it names `en/` as its canonical address, and `en/` is also
+the page for any other language (x-default); otherwise Google takes the two for duplicates and
+keeps the one it likes. The three language addresses of each page are listed in `sitemap.xml`,
+which the build also writes. The texts and the site's address live in `src/seo.ts` (the game) and
 `src/fortune/seo.ts`; `vite.config.ts` puts them into the pages. `public/robots.txt` points at the
 sitemap, the `og-*.jpg` and `og-fortune-*.jpg` files are the pictures shown when a link is shared,
 and `scripts/indexnow.sh` (run by the deploy) tells IndexNow — Bing, Yandex, Seznam — when the
