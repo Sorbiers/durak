@@ -19,7 +19,7 @@ describe('portraits', () => {
   });
 
   it('keeps the pictures of a second view to its own folder', () => {
-    for (const id of ['rita', 'sonya', 'sasha']) {
+    for (const id of ['rita', 'sonya', 'sasha', 'ivan', 'max', 'satyr']) {
       const c = characterById(id);
       expect(viewsOf(c)).toEqual([id, `${id}/2`]);
       expect(portraitUrl(c, `${id}/2`)).toMatch(new RegExp(`/${id}/2/neutral_\\d\\.webp$`));
@@ -40,6 +40,12 @@ describe('portraits', () => {
         expect(at).toBeGreaterThan(0);
         expect(at).toBeLessThan(100);
       }
+    }
+  });
+
+  it('fits a clip to every view of the character it is of', () => {
+    for (const c of CHARACTERS.filter((c) => c.clip)) {
+      for (const view of viewsOf(c)) expect(Object.keys(c.clip!.fit[view] ?? {})).not.toHaveLength(0);
     }
   });
 

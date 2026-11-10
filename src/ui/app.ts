@@ -818,23 +818,23 @@ export function startApp(): void {
     if (!(c.clip || c.smoke) || jokeSeat >= 0 || !jokeAllowed(seat)) return;
     jokeSeat = seat;
     const avatar = avatarEls[seat]!;
-    stopJoke = (c.clip ? playClip : playSmoke)(
-      avatar,
-      c,
-      (src) => changePicture(avatar, src),
-      () => {
-        if (jokeSeat !== seat) return; // the seats have been rebuilt
-        jokeSeat = -1;
-        renderSeats();
-      },
-    );
+    const change = (src: string): void => changePicture(avatar, src);
+    const done = (): void => {
+      if (jokeSeat !== seat) return; // the seats have been rebuilt
+      jokeSeat = -1;
+      renderSeats();
+    };
+    stopJoke = c.clip ? playClip(avatar, c, viewOf(c), change, done) : playSmoke(avatar, c, change, done);
   }
 
   /**
    * A character seen two ways, up close and at the table, turns to their other view when their
-   * portrait is clicked. The view they are left in is kept for the games after.
+   * portrait is clicked. The view they are left in is kept for the games after. One with a joke,
+   * the Satyr, plays it in the new view: a clip is framed for the view it plays in, so one already
+   * running starts again.
    */
   function switchView(seat: number): void {
+    if (jokeSeat === seat) stopJoke();
     const c = who(seat);
     const views = viewsOf(c);
     const view = views[(views.indexOf(viewOf(c)) + 1) % views.length]!;
@@ -842,6 +842,7 @@ export function startApp(): void {
     save('durak.settings', settings);
     faces[seat] = { mood: null, shown: {} };
     renderSeats();
+    startJoke(seat);
   }
 
   /**

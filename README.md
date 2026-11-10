@@ -113,8 +113,9 @@ roster, and cast them in `scripts/voices.mjs`.
 A character may be seen two ways, say up close and from across the table: the second set of
 pictures goes in a numbered folder inside their own, `public/avatars/<id>/2/`, named the same
 way. The roster shows their own pictures. At the table a click on their portrait switches to the
-other view, for every mood, and the game remembers which one they were left in. Rita, Sonya and
-Sasha have two views: up close in their own folder, and at the table in `2/`.
+other view, for every mood, and the game remembers which one they were left in; the Satyr also
+plays his clip in the view he turns to. Rita, Sonya, Sasha, Ivan, Max and the Satyr have two
+views: up close in their own folder, and at the table in `2/`.
 
 `characters.bat` opens `player-states.html` on the dev server: every picture of every opponent,
 a row for each view, mood by mood, with a test of how one picture dissolves into the next.
@@ -126,9 +127,11 @@ every card, and take a new thinking picture with each of their moves.
 
 A character may also have a short film, `clip.webp` beside the portraits, as a sheet of square
 frames declared in the roster. The portrait zooms in to the film's framing, the film plays
-forward and then back, and the portrait zooms out again. This happens when the pointer goes over
-the portrait while that character has nothing to do, and when the player has been thinking for a
-long time. Only the Satyr has one, and it is fetched only when first wanted. It does not play
+forward and then back, and the portrait zooms out again; where a view of the character is closer
+than the film, as the Satyr's close-ups are, the film is drawn enlarged to the picture's framing
+instead, and nothing zooms. The roster gives the fit for each view. This happens when the pointer
+goes over the portrait while that character has nothing to do, and when the player has been
+thinking for a long time. Only the Satyr has one, and it is fetched only when first wanted. It does not play
 with the portraits set to stay still, or where the system asks for reduced motion.
 
 The Professor smokes his pipe instead, at the same moments and on the same terms: his portrait

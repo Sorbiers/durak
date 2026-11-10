@@ -1,4 +1,4 @@
-import { Character, clipUrl } from './characters';
+import { Character, Zoom, clipUrl } from './characters';
 
 // While a clip plays, the portrait's own picture is blank and the frames are drawn as its
 // background: one element, with nothing stacked on it. The zoom into the clip's framing and back
@@ -7,6 +7,7 @@ import { Character, clipUrl } from './characters';
 
 const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 const ZOOM_MS = 1000;
+const AS_IS: Zoom = { scale: 1, x: 50, y: 50 };
 
 const sheets = new Map<string, Promise<void>>();
 
@@ -25,18 +26,22 @@ function loadSheet(url: string): Promise<void> {
 }
 
 /**
- * Plays a character's clip on their portrait: the picture zooms in to the clip's framing, the clip
- * runs forward and then back, so that it settles on the frame it started from, and the picture
- * zooms back out. `change` puts a new picture on the portrait. Returns a function that cuts all
- * this short; `done` is called once either way, and should put the portrait's own picture back.
+ * Plays a character's clip on their portrait, shown in `view` of them: the picture zooms in to the
+ * clip's framing (or the clip is drawn enlarged to the picture's, where the picture is the closer
+ * of the two), the clip runs forward and then back, so that it settles on the frame it started
+ * from, and the picture zooms back out. `change` puts a new picture on the portrait. Returns a
+ * function that cuts all this short; `done` is called once either way, and should put the
+ * portrait's own picture back.
  */
 export function playClip(
   el: HTMLImageElement,
   who: Character,
+  view: string,
   change: (src: string) => void,
   done: () => void,
 ): () => void {
-  const { frames, columns, fps, zoom } = who.clip!;
+  const { frames, columns, fps, fit } = who.clip!;
+  const { zoom = AS_IS, film = AS_IS } = fit[view] ?? {};
   const rows = Math.ceil(frames / columns);
   const url = clipUrl(who);
   const length = frames / fps;
@@ -70,7 +75,7 @@ export function playClip(
     el.style.backgroundPosition = `${zoom.x}% ${zoom.y}%`;
     zooming = el.animate(
       { backgroundSize: [size(from), size(to)] },
-      { duration: ZOOM_MS, easing: 'ease-in-out' },
+      { duration: from === to ? 0 : ZOOM_MS, easing: 'ease-in-out' },
     );
     zooming.onfinish = then;
   };
@@ -87,9 +92,10 @@ export function playClip(
       return;
     }
     const frame = Math.min(frames - 1, Math.floor((t < length ? t : 2 * length - t) * fps));
-    const column = frame % columns;
-    const row = Math.floor(frame / columns);
-    el.style.backgroundPosition = `${(column / (columns - 1)) * 100}% ${(row / (rows - 1)) * 100}%`;
+    // The frame's window in the sheet, drawn `film.scale` times its size, as background positions.
+    const at = (index: number, count: number, within: number): number =>
+      ((index * film.scale + (within / 100) * (film.scale - 1)) / (count * film.scale - 1)) * 100;
+    el.style.backgroundPosition = `${at(frame % columns, columns, film.x)}% ${at(Math.floor(frame / columns), rows, film.y)}%`;
     requestAnimationFrame((next) => tick(next, started));
   };
 
@@ -101,7 +107,7 @@ export function playClip(
       // this large takes to paint for the first time.
       change(BLANK);
       el.style.backgroundImage = `url("${url}")`;
-      el.style.backgroundSize = `${columns * 100}% ${rows * 100}%`;
+      el.style.backgroundSize = `${columns * film.scale * 100}% ${rows * film.scale * 100}%`;
       const started = performance.now();
       tick(started, started);
     });

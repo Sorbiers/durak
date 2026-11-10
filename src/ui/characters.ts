@@ -12,6 +12,13 @@ export type Mood =
   | 'angry'
   | 'worried';
 
+/** A scale, and a CSS background position in percent: how far into a picture to look, and where. */
+export interface Zoom {
+  scale: number;
+  x: number;
+  y: number;
+}
+
 export interface Character {
   id: string; // also the folder under public/avatars, where portraits.ts finds their pictures
   name: Record<Lang, string>;
@@ -20,9 +27,11 @@ export interface Character {
   female: boolean; // for choosing a voice
   pitch: number; // voice pitch, 0..2, to tell the speakers apart
   // A short film of them, as a sheet of square frames, row by row, in clip.webp beside the
-  // pictures. `zoom` is how far into their neutral picture its first frame looks, as a scale and
-  // a CSS background position in percent.
-  clip?: { frames: number; columns: number; fps: number; zoom: { scale: number; x: number; y: number } };
+  // pictures. `fit` brings the film and their pictures to the same framing, for each view of them
+  // (portraits.ts): `zoom` is how far into their neutral picture the film's first frame looks, where
+  // the film is the wider of the two, and `film` how far into the film the picture looks, where the
+  // picture is.
+  clip?: { frames: number; columns: number; fps: number; fit: Record<string, { zoom?: Zoom; film?: Zoom }> };
   // A pipe they smoke, played the way a clip is: `picture` is the one with the pipe in their mouth,
   // and x and y are where its bowl is, in percent of that picture.
   smoke?: { picture: string; x: number; y: number };
@@ -78,7 +87,12 @@ export const CHARACTERS: Character[] = [
     rating: 5,
     female: false,
     pitch: 1.15,
-    clip: { frames: 120, columns: 8, fps: 12, zoom: { scale: 1.349, x: 50.1, y: 8.3 } },
+    clip: {
+      frames: 120,
+      columns: 8,
+      fps: 12,
+      fit: { satyr: { film: { scale: 1.15, x: 48, y: 15 } }, 'satyr/2': { zoom: { scale: 1.349, x: 50.1, y: 8.3 } } },
+    },
   },
   {
     id: 'vera',
