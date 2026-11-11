@@ -123,7 +123,7 @@ a row for each view, mood by mood, with a test of how one picture dissolves into
 A portrait changes with each event: thinking while that opponent decides, a reaction when
 something lands on them, neutral otherwise. The exception is whoever leads or defends the bout:
 they go back to thinking rather than neutral until the table is cleared, so as not to blink on
-every card, and take a new thinking picture with each of their moves.
+every card, and take a new thinking picture each time they start to think.
 
 A character may also have a short film, `clip.webp` beside the portraits, as a sheet of square
 frames declared in the roster. The portrait zooms in to the film's framing, the film plays

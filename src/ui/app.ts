@@ -210,7 +210,8 @@ export function startApp(): void {
   // What each seat's face shows for the moment, in "react to the game" mode.
   let moods: { mood: Mood; until: number }[] = [];
   // The mood each seat's picture is showing, and the picture it last showed for each mood.
-  let faces: { mood: Mood | null; shown: Partial<Record<Mood, string>> }[] = [];
+  // `thought` is set once the seat has done its thinking behind the picture on show.
+  let faces: { mood: Mood | null; shown: Partial<Record<Mood, string>>; thought: boolean }[] = [];
   let lastNudge = -Infinity; // when an opponent last remarked on the player taking their time
   let jokeSeat = -1; // the seat whose portrait is playing its clip, or smoking its pipe
   let stopJoke = (): void => {};
@@ -297,7 +298,7 @@ export function startApp(): void {
     resignArmed = false;
     resultEl.hidden = true;
     moods = Array.from({ length: n }, () => ({ mood: 'neutral' as Mood, until: 0 }));
-    faces = Array.from({ length: n }, () => ({ mood: null, shown: {} }));
+    faces = Array.from({ length: n }, () => ({ mood: null, shown: {}, thought: false }));
     stopSpeaking();
     if (settings.speech) prepareVoices(settings.opponents.map(characterById), settings.lang);
     if (settings.portraits) {
@@ -348,7 +349,12 @@ export function startApp(): void {
         return;
       }
       thinking = seat;
+      // A portrait that goes on thinking takes a new thinking picture as it starts to think again.
+      // Not the first time: a defender has only just turned thoughtful as the card landed.
+      const face = faces[seat]!;
+      if (face.mood === 'thinking' && face.thought) face.mood = null;
       render();
+      face.thought = true;
       const hurry = isOut(HUMAN); // nobody is waiting for these moves
       const started = performance.now();
       const decision = await ai.request(
@@ -411,8 +417,6 @@ export function startApp(): void {
       clearTable = null;
       if (id !== gameId) return;
     }
-    // A portrait that goes on thinking takes a new thinking picture with each of its moves.
-    if (faces[seat]!.mood === 'thinking') faces[seat]!.mood = null;
     game = next;
     if (firstOut === undefined) {
       // Hands empty one move at a time, so this is whoever just played their last card.
@@ -797,6 +801,7 @@ export function startApp(): void {
     const mood = moodOf(seat);
     if (face.mood !== mood) {
       face.mood = mood;
+      face.thought = false;
       face.shown[mood] = pickPicture(who(seat), mood, face.shown[mood], viewOf(who(seat)));
     }
     return face.shown[mood]!;
@@ -840,7 +845,7 @@ export function startApp(): void {
     const view = views[(views.indexOf(viewOf(c)) + 1) % views.length]!;
     settings = { ...settings, views: { ...settings.views, [c.id]: view } };
     save('durak.settings', settings);
-    faces[seat] = { mood: null, shown: {} };
+    faces[seat] = { mood: null, shown: {}, thought: false };
     renderSeats();
     startJoke(seat);
   }
