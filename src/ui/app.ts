@@ -225,7 +225,12 @@ export function startApp(): void {
   // A shared table, where the server deals and judges and real people sit in some of the seats.
   // `link` is the table this page is at; `seats` says who sits where in a game dealt there, and
   // is unset while the game on the screen is played here, as it is while waiting for a first deal.
+  // The table this page sits at. A table is come to by its link, and only so: the link of a table
+  // this browser already has a seat at goes back to that seat, and the game's own address is a
+  // game of one's own, whatever table the browser sat at before.
   let link = load<Link | null>('durak.table', null);
+  if (!__NETWORK__ || invitedTo() !== link?.id) link = null;
+  let started = false; // the page has dealt its first game
   let lobby: Lobby | null = null;
   let seats: SeatInfo[] | null = null;
   let tableGame = 0; // the number of the server's game on the screen
@@ -344,11 +349,13 @@ export function startApp(): void {
   }
 
   function deal(): void {
-    // At a shared table the server deals, when it is asked to.
-    if (seats && link) {
+    // At a shared table the server deals, when it is asked to and when the table is ready.
+    // (The page's first deal is always its own: it gives the table something to stand on.)
+    if (link && started) {
       void tableSay('again');
       return;
     }
+    started = true;
     const n = settings.opponents.length + 1;
     // The lead in a later game goes by the table's custom: to the previous winner, or to the
     // player on the fool's right, who leads at the fool. Failing either, the lowest trump.
@@ -623,10 +630,17 @@ export function startApp(): void {
     return !failed(await ask<{ ok: true }>(`tables/${link.id}/${what}`, { token: link.token, ...more }));
   }
 
-  /** Remembers which table this page sits at, or that it sits at none. */
+  /** Remembers which table this page sits at, or that it sits at none. The table is kept in the
+   *  page's address, as in the invitation: a reload comes back to it, and the bare address of the
+   *  game is a game of one's own. */
   function sit(at: Link | null): void {
     link = at;
     redrawAids?.();
+    try {
+      history.replaceState(null, '', location.pathname + location.search + (at ? `#t=${at.id}` : ''));
+    } catch {
+      // The address stays as it was; only a reload is affected.
+    }
     if (at) save('durak.table', at);
     else {
       try {
@@ -635,6 +649,19 @@ export function startApp(): void {
         // Nothing was kept, then.
       }
     }
+  }
+
+  /** At a table with no game of its own yet, or one this page was not dealt into: the page's own
+   *  game is put away, and the cloth stays empty until the server deals. */
+  function awaitDeal(): void {
+    if (!link || seats) return;
+    gameId++;
+    ai.cancel();
+    awaitingHuman = false;
+    thinking = -1;
+    clearTable = null;
+    selected = [];
+    notice = '';
   }
 
   function startListening(): void {
@@ -736,15 +763,13 @@ export function startApp(): void {
     sit(null);
     lobby = null;
     inbox = [];
-    const wasPlaying = seats !== null;
     seats = null;
     people.clear();
     redrawInvite?.();
-    if (wasPlaying) {
-      ai.cancel();
-      deal();
-      notice = `${t.tableClosed} ${notice}`;
-    }
+    // The page's own game was put away for the table, so a new one is dealt.
+    ai.cancel();
+    deal();
+    notice = `${t.tableClosed} ${notice}`;
     render();
   }
 
@@ -980,7 +1005,7 @@ export function startApp(): void {
       const made = await ask<Seated>(`tables/${id}/join`, { name, avatar: me.avatar || undefined });
       if (failed(made)) return say(refusal(made.error));
       sit({ ...made, host: false });
-      forget();
+      awaitDeal();
       startListening();
       render();
       dialog.close();
@@ -1443,6 +1468,7 @@ export function startApp(): void {
    * puts everything where it belongs without the cards travelling there.
    */
   function render(instant = false, snap = false): void {
+    stage.classList.toggle('awaiting-deal', link !== null && seats === null);
     const rect = stage.getBoundingClientRect();
     const over = game.phase === OVER;
     const lay = (avatars: 'off' | 'normal' | 'large') =>
@@ -1592,7 +1618,9 @@ export function startApp(): void {
       el.classList.toggle('out', out && !(over && game.loser === p));
       el.classList.toggle('fool', over && game.loser === p);
       el.classList.toggle('thinking', thinking === p);
-      el.querySelector('.name')!.textContent = seatName(p);
+      // At a shared table the player's own plate carries the name the others see.
+      const sitter = p === HUMAN ? personAt(p) : null;
+      el.querySelector('.name')!.textContent = sitter ? `${t.you} · ${sitter.name}` : seatName(p);
       el.querySelector('.count')!.textContent = p === HUMAN || out ? '' : String(game.hands[p].length);
       // Who leads and who defends. For the player it is part of their plate; for the others
       // it is written above their cards, where it is easier to see.
@@ -1971,6 +1999,7 @@ export function startApp(): void {
             settings = { ...settings, ...rules, opponents: picked };
             save('durak.settings', settings);
             sit({ ...made, host: true });
+            awaitDeal();
             startListening();
             render();
             drawInvite();
@@ -2176,7 +2205,7 @@ export function startApp(): void {
     save('durak.settings', settings);
     // Keep the address in step with the language without reloading and losing the game.
     try {
-      history.replaceState(null, '', `${PART_ROOT}${settings.lang}/`);
+      history.replaceState(null, '', `${PART_ROOT}${settings.lang}/${location.hash}`);
     } catch {
       // Not every place a page can be opened from allows this; the switch still works.
     }
@@ -2238,12 +2267,13 @@ export function startApp(): void {
 
   const firstVisit = load<Partial<Settings>>('durak.settings', {}).opponents === undefined;
   deal();
-  // An invitation is answered first. Failing one, a page that was at a table goes back to it.
+  // The link of a table this browser has no seat at is an invitation to answer.
   const invited = __NETWORK__ ? invitedTo() : null;
-  if (!__NETWORK__) link = null;
-  if (invited && invited !== link?.id) {
-    sit(null);
-    void openJoin(invited);
-  } else if (link) startListening();
+  if (invited && !link) void openJoin(invited);
+  else if (link) {
+    awaitDeal();
+    startListening();
+    render();
+  }
   else if (firstVisit) openSettings();
 }

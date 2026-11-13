@@ -30,8 +30,6 @@ export interface Limits {
   activeMs: number; // a table counts as in use this long after its last move
   botMs: number; // a computer player's move is awaited from the host's page this long
   botAloneMs: number; // ... and this long when the host's page is not there
-  awayMs: number; // a person who is not there is played for after this long
-  idleMs: number; // ... and one who is there but does nothing, after this long
 }
 
 export const LIMITS: Limits = {
@@ -43,8 +41,6 @@ export const LIMITS: Limits = {
   activeMs: 15 * 60_000,
   botMs: 30_000,
   botAloneMs: 3_000,
-  awayMs: 30_000,
-  idleMs: 180_000,
 };
 
 export type Refusal = 'busy' | 'gone' | 'full' | 'name' | 'avatar' | 'denied' | 'stale' | 'illegal' | 'hush';
@@ -274,6 +270,8 @@ export class Tables {
     if (refused(found)) return found;
     const { t, who } = found;
     if (t.game && t.game.phase !== OVER && !who.host) return no('denied');
+    // Asking does not hurry a table that is still waiting for its guests.
+    if (t.gameNo === 0 && !this.ready(t)) return no('stale');
     if (!this.deal(t)) return no('stale');
     return { ok: true };
   }
@@ -323,13 +321,14 @@ export class Tables {
       if (!g || g.phase === OVER) continue;
       const seat = t.seats[g.turn]!;
       const waited = now - t.turnAt;
+      // A person is never moved for, however long they take or wherever their page has gone: the
+      // table waits, and the host can deal again. Only a seat whose person has left the table
+      // for good is played out, like a computer player whose host is away.
       let limit: number;
       if (seat.kind === 'bot') {
         limit = t.people[0]!.sinks.size > 0 ? this.limits.botMs : this.limits.botAloneMs;
-      } else {
-        const who = t.people.find((p) => p.key === seat.key);
-        limit = !who ? this.limits.botAloneMs : who.sinks.size > 0 ? this.limits.idleMs : this.limits.awayMs;
-      }
+      } else if (t.people.some((p) => p.key === seat.key)) continue;
+      else limit = this.limits.botAloneMs;
       if (waited >= limit) this.apply(t, heuristicAction(g, legalActions(g), this.rng));
     }
   }
@@ -389,10 +388,13 @@ export class Tables {
   }
 
   /** The first game is dealt by itself, as soon as there is anyone to play it with. */
+  /** Whether the first game may be dealt: at once, or once every guest has come if the host asked to wait. */
+  private ready(t: Table): boolean {
+    return !t.waitAll || t.people.length - 1 >= t.maxGuests;
+  }
+
   private firstDeal(t: Table): void {
-    if (t.gameNo > 0) return;
-    if (t.waitAll && t.people.length - 1 < t.maxGuests) return;
-    this.deal(t);
+    if (t.gameNo === 0 && this.ready(t)) this.deal(t);
   }
 
   private deal(t: Table): boolean {

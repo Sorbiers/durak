@@ -118,15 +118,33 @@ describe('shared tables', () => {
     expect(mover.last<Moved>('move')!.seat).toBe(0);
   });
 
-  it('plays for a computer player when the host is away, and for a person who is', () => {
+  it('plays for a computer player when the host is away, but never for a person', () => {
     const { tables, made, pass, over } = setup(5);
     const host = page(tables, made);
+    const dealt = host.last<Snapshot>('deal', 'snap')!;
     host.stop();
-    for (let i = 0; i < 2000 && over.length === 0; i++) {
-      pass(LIMITS.awayMs);
+    for (let i = 0; i < 50; i++) {
+      pass(60_000);
       tables.tick();
     }
-    expect(over).toHaveLength(1);
+    // The computer player has had its moves; the game then waits for the host, however long.
+    expect(over).toHaveLength(0);
+    const now = page(tables, made).last<Snapshot>('snap')!;
+    expect(now.view.turn).toBe(0);
+    expect(now.moveNo).toBeLessThanOrEqual(dealt.moveNo + 2);
+  });
+
+  it('does not deal on request while it waits for all its guests', () => {
+    const { tables, made } = setup(3, table({ waitAll: true, maxGuests: 2 }));
+    const host = page(tables, made);
+    expect(tables.again(made.id, made.token)).toEqual({ error: 'stale' });
+    const first = tables.join(made.id, { name: 'One' });
+    if (refused(first)) throw new Error(first.error);
+    expect(tables.again(made.id, made.token)).toEqual({ error: 'stale' });
+    expect(host.last<Snapshot>('deal', 'snap')).toBeUndefined();
+    const second = tables.join(made.id, { name: 'Two' });
+    if (refused(second)) throw new Error(second.error);
+    expect(host.last<Snapshot>('deal')!.seats).toHaveLength(4);
   });
 
   it('gives the game to the others when someone resigns', () => {

@@ -175,11 +175,14 @@ browser before it is sent.
   sent only what its own seat may see, so nobody's browser holds anyone else's cards. A page shows
   the cards it cannot know as stand-ins for each other (`src/net/shown.ts`).
 - The computer players at a shared table think in the host's browser, which is sent only that
-  player's view. If the host is away, the server plays a rule-of-thumb move for them, as it does
-  for a person who has gone.
+  player's view. If the host is away, the server plays a rule-of-thumb move for them. It never
+  moves for a person: the table waits for them, and the host can deal again.
 - The self-training options are switched off at a shared table, all of them.
 - **Say** opens a line to type: up to 140 characters, shown as a speech bubble by the speaker's
   place on everyone's screen. The server passes it on and does not keep it.
+- A table is come to by its link. The page at a table has the link as its address, so a reload
+  comes back to the same seat, and so does opening the link again in the same browser; the
+  game's own address always starts a game of one's own.
 - A table is kept for 12 hours after it was last played at. The host can destroy it from the same
   tab, and a guest can leave it there. Ten tables can be in use at once.
 

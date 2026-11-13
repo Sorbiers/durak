@@ -1686,10 +1686,20 @@ dialog input[type='text']:focus-visible {
 }
 .me-picture {
   display: flex;
+  flex-wrap: wrap; /* in a narrow dialog, or a language with long words, the buttons go below */
   align-items: center;
   gap: 8px;
+  min-width: 0;
+}
+.me-picture button {
+  padding: 6px 12px;
+}
+/* The invitation has short labels, so its controls get more of the width. */
+#join .row {
+  grid-template-columns: 7em minmax(0, 1fr);
 }
 .me-picture img {
+  flex: none;
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -1760,4 +1770,40 @@ dialog input[type='text']:focus-visible {
 .seat.me .bubble::before {
   top: auto;
   bottom: -5px;
+}
+
+/* At a shared table before its first deal, or waiting for the next one: an empty cloth, with only
+   the people waiting and the line under them. */
+#stage.awaiting-deal > :not(#guests):not(#actions) {
+  display: none !important; /* not visibility: a card sets its own */
+}
+body:has(#stage.awaiting-deal) #meta,
+body:has(#stage.awaiting-deal) #score {
+  visibility: hidden;
+}
+/* With nothing else on the cloth, the people waiting take the middle of it. */
+#stage.awaiting-deal #guests {
+  right: auto;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%);
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 18px;
+  max-width: min(92vw, 560px);
+}
+#stage.awaiting-deal #guests .guest {
+  font-size: 15px;
+}
+#stage.awaiting-deal #guests .guest img,
+#stage.awaiting-deal #guests .guest i {
+  width: 84px;
+  height: 84px;
+}
+#stage.awaiting-deal #guests small {
+  flex-basis: 100%;
+  font-size: 17px;
+  text-align: center;
 }
