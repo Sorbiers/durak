@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && tsc -p server && vite build && vite build --config vite.net.config.ts",
+    "net": "tsx watch server/main.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "tournament": "tsx scripts/tournament.ts",
     "voices": "tsx scripts/voices.mjs"
   },
   "devDependencies": {
+    "@types/node": "^22.20.5",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",

@@ -159,6 +159,32 @@ Sound follows three rules. Nothing is fetched unless speech is switched on, and 
 clips of the opponents at the table. A clip is played only if it has already arrived. And
 voices never overlap or queue: while one remark is being spoken, another goes unspoken.
 
+## Playing with guests
+
+Settings has a fourth tab among the opponents, **Invite**. "Invite a player" opens a shared table
+on the server and gives a link to send to up to three people. A guest opens the link, types a
+name, may add a picture, and sits down: there are no accounts. The picture is made small in the
+browser before it is sent.
+
+- People and computer players can sit at one table, four at most. The computer players are the
+  opponents chosen in Settings, unless the host unticks them.
+- The first deal comes as soon as there is anyone to play with, or once every guest has arrived
+  if the host asked to wait for all. Someone who arrives during a game sits down at the next deal;
+  until then a place is kept for them at the edge of the cloth.
+- The server deals and judges (`src/net/rooms.ts`), with the same rules as the game. Each page is
+  sent only what its own seat may see, so nobody's browser holds anyone else's cards. A page shows
+  the cards it cannot know as stand-ins for each other (`src/net/shown.ts`).
+- The computer players at a shared table think in the host's browser, which is sent only that
+  player's view. If the host is away, the server plays a rule-of-thumb move for them, as it does
+  for a person who has gone.
+- The self-training options are switched off at a shared table, all of them.
+- A table is kept for 12 hours after it was last played at. The host can destroy it from the same
+  tab, and a guest can leave it there. Ten tables can be in use at once.
+
+The whole thing is optional. `network.env` (copy `network.env.example`; it is not committed)
+switches it on: without the file, or with `NETWORK=off`, the game has no Invite tab and the
+service is not installed. `npm run net` runs the table server beside `npm run dev`.
+
 ## Fortune-telling
 
 `fortune/index.html` is a second page, built from the same cards, cloth, portraits and voices. A
@@ -228,6 +254,13 @@ recrawl. The server, key and port come from `deploy.env`, which is not committed
 `deploy/podkidnoy.conf` is only the bootstrap nginx site. The live copy in
 `/etc/nginx/conf.d` has since been edited by certbot for HTTPS, and the deploy script leaves
 it alone, so changes to headers must be made on the server.
+
+With `NETWORK=on` in `network.env` the deploy also uploads the table server, a single file built
+from `server/main.ts`. On the first such deploy it unpacks Node into `/opt/podkidnoy/node`,
+installs the `podkidnoy-net` service (`deploy/podkidnoy-net.service`), and adds one `include`
+line to the live nginx conf for `/network/api/` (`deploy/network-nginx.conf`). `network.bat`
+stops and starts the service without a deploy: `network.bat stop`, `start`, `restart`, `log`, and
+with nothing after it, whether it is running and how many tables are in use.
 
 ### The site and search engines
 

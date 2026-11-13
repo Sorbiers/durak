@@ -79,7 +79,8 @@ export const PAGES: Record<PageLang, PageText> = {
 
 <p class="fine">Конфиденциальность: никаких cookie и трекеров, настройки и счёт остаются в вашем браузере.
 Сервер хранит стандартный временный журнал запросов с IP-адресом и браузером. Сервер также хранит
-статистику сыгранных партий. Сообщайте о проблемах здесь
+статистику сыгранных партий. В игре с гостями имя и картинка, которые вы указали, видны сидящим за
+столом и хранятся на сервере, пока существует стол. Сообщайте о проблемах здесь
 <a href="${REPO}/issues" target="_blank" rel="noopener">github.com/Sorbiers/durak/issues</a>.</p>
 
 <p class="fine">Исходный код открыт, лицензия MIT:
@@ -139,7 +140,8 @@ defender's last card, there is no fool: it is a draw.</li>
 
 <p class="fine">Privacy: no cookies and no trackers, and your settings and scores stay in your browser.
 The server keeps a standard temporary log of requests, with IP address and browser. The server also
-keeps statistics of games played. Report problems here:
+keeps statistics of games played. In a game with guests, the name and picture you give are shown to
+the others at the table and kept on the server only while the table exists. Report problems here:
 <a href="${REPO}/issues" target="_blank" rel="noopener">github.com/Sorbiers/durak/issues</a>.</p>
 
 <p class="fine">The source is open under the MIT licence:
@@ -200,8 +202,9 @@ dernière carte du défenseur, il n’y a pas de dourak : partie nulle.</li>
 
 <p class="fine">Confidentialité : ni cookies ni traceurs, vos réglages et vos scores restent dans votre
 navigateur. Le serveur conserve un journal temporaire standard des requêtes, avec l’adresse IP et le
-navigateur. Le serveur conserve aussi des statistiques sur les parties jouées. Signalez les problèmes
-ici : <a href="${REPO}/issues" target="_blank" rel="noopener">github.com/Sorbiers/durak/issues</a>.</p>
+navigateur. Le serveur conserve aussi des statistiques sur les parties jouées. Dans une partie avec
+des invités, le nom et l’image que vous indiquez sont montrés aux autres joueurs de la table et
+conservés sur le serveur tant que la table existe. Signalez les problèmes ici : <a href="${REPO}/issues" target="_blank" rel="noopener">github.com/Sorbiers/durak/issues</a>.</p>
 
 <p class="fine">Le code source est ouvert, sous licence MIT :
 <a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,

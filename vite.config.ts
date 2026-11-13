@@ -1,4 +1,4 @@
-import { readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { defineConfig, type Plugin } from 'vite';
 import { FORTUNE_PAGES } from './src/fortune/seo';
@@ -248,9 +248,26 @@ function portraits(): Plugin {
   };
 }
 
+// Shared tables are offered only where network.env says so (see network.env.example). Without the
+// file, or with NETWORK=off, the game has no Invite tab and never asks for the table server.
+function networkEnv(): Record<string, string> {
+  const file = at('./network.env');
+  if (!existsSync(file)) return {};
+  const found: Record<string, string> = {};
+  for (const line of readFileSync(file, 'utf8').split(/\r?\n/)) {
+    const m = /^\s*([A-Z_]+)\s*=\s*([^#]*?)\s*(?:#.*)?$/.exec(line);
+    if (m) found[m[1]!] = m[2]!;
+  }
+  return found;
+}
+const network = networkEnv();
+
 // Relative asset paths, so the built site works from any folder on a web server.
 export default defineConfig({
   base: './',
+  define: { __NETWORK__: JSON.stringify(network.NETWORK === 'on') },
+  // While developing, the table server runs beside the dev server (npm run net).
+  server: { proxy: { '/network/api': `http://127.0.0.1:${network.NETWORK_PORT || 8083}` } },
   plugins: [pages(), portraits()],
   build: { rollupOptions: { input: { index: at('./index.html'), fortune: at('./fortune/index.html') } } },
 });

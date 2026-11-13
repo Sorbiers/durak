@@ -20,6 +20,9 @@ import {
 } from '../engine/game';
 import { observe } from '../engine/observe';
 import { cryptoRng } from '../engine/rng';
+import { Link, Me, ask, avatarUrl, failed, initialPicture, invitedTo, inviteUrl, listen, shrink } from '../net/client';
+import { Ending, Lobby, Moved, Seated, SeatInfo, ServerEvent, Snapshot as TableState, TableCard, Think } from '../net/protocol';
+import { matches, prepare, revealed, shownFrom } from '../net/shown';
 import { TELLERS, tellerById, tellerPicture } from '../fortune/tellers';
 import { PAGES, otherLangs } from '../seo';
 import { AiClient } from './aiClient';
@@ -34,6 +37,9 @@ import { pickPicture, portraitUrl, preloadAvatars, viewsOf } from './portraits';
 import { PAGE_LANG, PART_ROOT, ROOT, browserLang } from './root';
 import { audition, prepareVoices, releaseVoices, speak, stopSpeaking } from './speech';
 import { load, save } from './store';
+
+// Whether this build offers shared tables at all (network.env, read by vite.config.ts).
+declare const __NETWORK__: boolean;
 
 const HUMAN = 0;
 const BOT_PAUSE = 700; // a computer move is never shown sooner than this
@@ -59,10 +65,10 @@ interface Settings {
   speech: boolean; // remarks are also read aloud
   showKnown: boolean;
   autoDiscard: boolean; // sweep a beaten bout away without waiting for the player
+  showPlayable: boolean; // dim the cards that cannot be played now
   hints: boolean; // offer the Hint button
   showArrow: boolean; // draw the arrow from the attacker to the defender
   trumpCount: boolean; // after a game, say how many trumps each player received
-  showPlayable: boolean; // dim the cards that cannot be played now
   showTrumps: boolean; // mark trump cards with a brass band
   undo: boolean; // a move can be taken back (Ctrl+Z)
   chance: boolean; // the player's chance of not ending up the fool is always on show
@@ -75,7 +81,7 @@ interface Settings {
 }
 
 /** The options that help in learning the game. */
-type Aid = 'showKnown' | 'showPlayable' | 'showTrumps' | 'hints' | 'chance' | 'undo' | 'gameLog' | 'openCards';
+type Aid = 'showKnown' | 'showTrumps' | 'hints' | 'chance' | 'undo' | 'gameLog' | 'openCards';
 
 /** How one player's games ended. Every game ends one of four ways, so the four add up. */
 interface Score {
@@ -216,6 +222,20 @@ export function startApp(): void {
   let jokeSeat = -1; // the seat whose portrait is playing its clip, or smoking its pipe
   let stopJoke = (): void => {};
 
+  // A shared table, where the server deals and judges and real people sit in some of the seats.
+  // `link` is the table this page is at; `seats` says who sits where in a game dealt there, and
+  // is unset while the game on the screen is played here, as it is while waiting for a first deal.
+  let link = load<Link | null>('durak.table', null);
+  let lobby: Lobby | null = null;
+  let seats: SeatInfo[] | null = null;
+  let tableGame = 0; // the number of the server's game on the screen
+  let tableMoves = 0; // how many of its moves have been shown
+  let inbox: ServerEvent[] = []; // what the server has said and the table has yet to show
+  let showing = false;
+  let stopListening = (): void => {};
+  let me = load<Me>('durak.me', { name: '', avatar: '' });
+  const people = new Map<string, Character>(); // a person at the table, in the shape of a character
+
   const cardEls: HTMLElement[] = [];
   for (let c = 0; c < DECK_SIZE; c++) {
     const el = createCard(c);
@@ -228,11 +248,30 @@ export function startApp(): void {
   }
 
   const cardText = (c: Card): string => t.ranks[rankOf(c)] + SUIT_SYMBOLS[suitOf(c)];
-  /** Whether a training option is in effect: chosen, and training switched on. */
-  const aid = (name: Aid): boolean => settings.training && settings[name];
+  /** Whether a training option is in effect: chosen, and training switched on. None is at a
+   *  shared table, where the aids would not be fair to the others or cannot be had. */
+  const aid = (name: Aid): boolean => settings.training && settings[name] && !link;
   const isOut = (p: number): boolean => game.hands[p].length === 0 && game.deck.length === 0;
-  /** The character in an opponent's seat (seats 1 and up). */
-  const who = (seat: number): Character => characterById(settings.opponents[seat - 1]);
+  /** The person in a seat at a shared table, if it is a person's. */
+  const personAt = (seat: number): (SeatInfo & { kind: 'person' }) | null => {
+    const s = seats?.[seat];
+    return s?.kind === 'person' ? s : null;
+  };
+  /** The character in an opponent's seat (seats 1 and up). A person is given the shape of one. */
+  const who = (seat: number): Character => {
+    const s = seats?.[seat];
+    if (!s) return characterById(settings.opponents[seat - 1]);
+    if (s.kind === 'bot') return characterById(s.id);
+    let c = people.get(s.key);
+    if (!c) {
+      c = { id: `person:${s.key}`, name: { ru: s.name, en: s.name, fr: s.name }, style: 'real', rating: 3, female: false, pitch: 1 };
+      people.set(s.key, c);
+    }
+    return c;
+  };
+  /** A person's picture: the one they sent, or a disc with their initial. */
+  const personPicture = (s: { key: string; name: string; avatar: boolean }): string =>
+    s.avatar && link ? avatarUrl(link, s.key) : initialPicture(s.name);
   /** The view a character is shown in: the one the player last switched to, else their own. */
   const viewOf = (c: Character): string =>
     viewsOf(c).includes(settings.views[c.id] ?? '') ? settings.views[c.id]! : c.id;
@@ -243,26 +282,36 @@ export function startApp(): void {
   };
   // Results are kept apart for each line-up and each strength it was played at.
   const tallyKey = (): string =>
-    `${settings.transfer ? 't' : 's'}:` +
-    settings.opponents.map((id) => id + ratingOf(characterById(id))).join('+');
+    seats
+      ? `net:${game.rules.transfer ? 't' : 's'}:` + seats.slice(1).map((_, i) => who(i + 1).id).join('+')
+      : `${settings.transfer ? 't' : 's'}:` + settings.opponents.map((id) => id + ratingOf(characterById(id))).join('+');
   const scoreId = (seat: number): string => (seat === HUMAN ? 'you' : who(seat).id);
   const seatName = (seat: number): string =>
     seat === HUMAN ? t.you : who(seat).name[settings.lang];
 
   // ---------------------------------------------------------------- game flow
 
-  function deal(): void {
-    const n = settings.opponents.length + 1;
-    // The lead in a later game goes by the table's custom: to the previous winner, or to the
-    // player on the fool's right, who leads at the fool. Failing either, the lowest trump.
-    const byWinner = settings.nextLead === 'winner';
-    const earned = byWinner ? lastWinner : lastFool === undefined ? undefined : (lastFool - 1 + n) % n;
-    const winner = earned !== undefined && earned < n ? earned : undefined;
-    game = newGame(
-      { players: n, transfer: settings.transfer, firstBoutFive: settings.firstBoutFive },
-      cryptoRng,
-      winner,
-    );
+  /** The computer players at the table. */
+  const lineup = (): Character[] =>
+    seats ? seats.flatMap((s) => (s.kind === 'bot' ? [characterById(s.id)] : [])) : settings.opponents.map(characterById);
+
+  /** Says who leads a new deal and why; it stays up until the first card is played. */
+  function leadNotice(why: 'winner' | 'fool' | 'trump' | 'lot', card?: Card): string {
+    const mine = game.attacker === HUMAN;
+    const text =
+      why === 'winner'
+        ? mine ? t.firstWinnerYou : t.firstWinner
+        : why === 'fool'
+          ? mine ? t.firstFoolYou : t.firstFool
+          : why === 'trump'
+            ? mine ? t.firstTrumpYou : t.firstTrump
+            : mine ? t.firstLotYou : t.firstLot;
+    return fill(text, { name: seatName(game.attacker), card: card === undefined ? '' : cardText(card) });
+  }
+
+  /** Lays the table for the game just dealt, here or by the server. Returns the deal's number. */
+  function setTable(): number {
+    const n = game.hands.length;
     firstOut = undefined;
     trumpsDealt = game.hands.map((h) => h.filter((c) => suitOf(c) === game.trump).length);
     trumpsDrawn = game.hands.map(() => 0);
@@ -273,20 +322,6 @@ export function startApp(): void {
     awaitingHuman = false;
     thinking = -1;
     selected = [];
-    // Say who leads and why; it stays up until the first card is played.
-    const leader = game.attacker;
-    const mine = leader === HUMAN;
-    const shown = winner === undefined ? lowestTrump(game.hands, game.trump) : null;
-    notice = fill(
-      winner !== undefined
-        ? byWinner
-          ? mine ? t.firstWinnerYou : t.firstWinner
-          : mine ? t.firstFoolYou : t.firstFool
-        : shown
-          ? mine ? t.firstTrumpYou : t.firstTrump
-          : mine ? t.firstLotYou : t.firstLot,
-      { name: seatName(leader), card: shown ? cardText(shown.card) : '' },
-    );
     dropAdvice();
     chance = '';
     snapshots = [];
@@ -300,11 +335,35 @@ export function startApp(): void {
     moods = Array.from({ length: n }, () => ({ mood: 'neutral' as Mood, until: 0 }));
     faces = Array.from({ length: n }, () => ({ mood: null, shown: {}, thought: false }));
     stopSpeaking();
-    if (settings.speech) prepareVoices(settings.opponents.map(characterById), settings.lang);
+    if (settings.speech) prepareVoices(lineup(), settings.lang);
     if (settings.portraits) {
-      for (const c of settings.opponents.map(characterById)) viewsOf(c).forEach((view) => preloadAvatars(c, view));
+      for (const c of lineup()) viewsOf(c).forEach((view) => preloadAvatars(c, view));
     }
     buildSeats();
+    return id;
+  }
+
+  function deal(): void {
+    // At a shared table the server deals, when it is asked to.
+    if (seats && link) {
+      void tableSay('again');
+      return;
+    }
+    const n = settings.opponents.length + 1;
+    // The lead in a later game goes by the table's custom: to the previous winner, or to the
+    // player on the fool's right, who leads at the fool. Failing either, the lowest trump.
+    const byWinner = settings.nextLead === 'winner';
+    const earned = byWinner ? lastWinner : lastFool === undefined ? undefined : (lastFool - 1 + n) % n;
+    const winner = earned !== undefined && earned < n ? earned : undefined;
+    game = newGame(
+      { players: n, transfer: settings.transfer, firstBoutFive: settings.firstBoutFive },
+      cryptoRng,
+      winner,
+    );
+    const shown = winner === undefined ? lowestTrump(game.hands, game.trump) : null;
+    notice = leadNotice(winner !== undefined ? (byWinner ? 'winner' : 'fool') : shown ? 'trump' : 'lot', shown?.card);
+    const id = setTable();
+    const mine = game.attacker === HUMAN;
 
     // Gather every card on the deck first, then let the deal fly out from there.
     lastWhere = new Array(DECK_SIZE).fill('deck');
@@ -438,7 +497,7 @@ export function startApp(): void {
     setTimeout(() => {
       const now = performance.now();
       if (id !== gameId || moveNo !== at || !awaitingHuman || now - lastNudge < 180_000) return;
-      const waiting = settings.opponents.map((_, i) => i + 1).filter((p) => !isOut(p));
+      const waiting = game.hands.map((_, p) => p).filter((p) => p !== HUMAN && !personAt(p) && !isOut(p));
       if (waiting.length === 0) return;
       lastNudge = now;
       react(waiting[(Math.random() * waiting.length) | 0], 'waiting');
@@ -467,10 +526,16 @@ export function startApp(): void {
     }
     awaitingHuman = false;
     resignArmed = false;
-    resigned = true;
     selected = [];
     notice = '';
     dropAdvice();
+    if (seats) {
+      // The server ends the game, and tells everyone at the table.
+      render();
+      void tableSay('resign');
+      return;
+    }
+    resigned = true;
     moveNo++;
     game = { ...cloneState(game), phase: OVER, loser: HUMAN };
     finish();
@@ -478,6 +543,7 @@ export function startApp(): void {
 
   /** Lets the server count a game: asking for an empty file is enough, as its log keeps the address. */
   function reportGame(event: 'played' | 'ended'): void {
+    if (seats) return; // the table server keeps its own count
     const url = `${ROOT}game.txt?e=${event}&o=${settings.opponents.join(',')}`;
     void fetch(url, { cache: 'no-store', keepalive: true }).catch(() => undefined);
   }
@@ -490,13 +556,21 @@ export function startApp(): void {
     notice = '';
     if (!moved) reportGame('played');
     moved = true;
+    if (seats) {
+      // The move is shown when the server sends it back, as everyone else's is.
+      render();
+      void tableSay('move', { action: a, moveNo: tableMoves }).then((ok) => {
+        if (!ok) void resync();
+      });
+      return;
+    }
     const id = gameId;
     void play(a, id).then(() => {
       if (id === gameId) void run(id);
     });
   }
 
-  function finish(): void {
+  function finish(gaveUp = -1): void {
     // The winner leads the next game. After a resignation with nobody out yet, the only
     // possible winner is the lone opponent of a two-player game.
     lastWinner = firstOut ?? (resigned && game.hands.length === 2 ? 1 : undefined);
@@ -517,6 +591,7 @@ export function startApp(): void {
 
     let text: string;
     if (resigned) text = t.youResigned;
+    else if (gaveUp > HUMAN) text = fill(t.theyResigned, { name: seatName(gaveUp) });
     else if (game.loser === HUMAN) text = t.youFool;
     else if (game.loser === DRAW) text = left[HUMAN] ? t.othersDraw : t.youDraw;
     else text = fill(t.youWon, { name: seatName(game.loser) });
@@ -529,7 +604,8 @@ export function startApp(): void {
     logLines.push(text);
     resultEl.innerHTML = `<p></p><small></small><button class="primary">${t.again}</button>`;
     resultEl.querySelector('p')!.textContent = text;
-    resultEl.querySelector('small')!.textContent = settings.trumpCount
+    // At a shared table the cards the others drew are not known, so there is nothing to count.
+    resultEl.querySelector('small')!.textContent = settings.trumpCount && !seats
       ? `${t.trumpCount}: ` + game.hands.map((_, p) => `${seatName(p)} ${trumpsDealt[p]} + ${trumpsDrawn[p]}`).join(' · ')
       : '';
     resultEl.querySelector('button')!.addEventListener('click', deal);
@@ -537,6 +613,345 @@ export function startApp(): void {
     resultEl.hidden = false;
     render();
   }
+
+
+  // ------------------------------------------------------------- shared table
+
+  /** Says something to the table server. False if it would not have it. */
+  async function tableSay(what: 'move' | 'resign' | 'again' | 'leave', more: object = {}): Promise<boolean> {
+    if (!link) return false;
+    return !failed(await ask<{ ok: true }>(`tables/${link.id}/${what}`, { token: link.token, ...more }));
+  }
+
+  /** Remembers which table this page sits at, or that it sits at none. */
+  function sit(at: Link | null): void {
+    link = at;
+    redrawAids?.();
+    if (at) save('durak.table', at);
+    else {
+      try {
+        localStorage.removeItem('durak.table');
+      } catch {
+        // Nothing was kept, then.
+      }
+    }
+  }
+
+  function startListening(): void {
+    stopListening();
+    if (link) stopListening = listen(link, hear, tableGone);
+  }
+
+  /** Connects afresh, so that the server says how the game stands: after anything went amiss. */
+  function resync(): void {
+    inbox = [];
+    startListening();
+  }
+
+  function hear(e: ServerEvent): void {
+    if (e.type === 'lobby') {
+      lobby = e;
+      renderGuests();
+      redrawInvite?.();
+    } else if (e.type === 'closed') tableGone();
+    else {
+      inbox.push(e);
+      void showNext();
+    }
+  }
+
+  /** Shows what the server has said, one thing after another, each move in its own time. */
+  async function showNext(): Promise<void> {
+    if (showing) return;
+    showing = true;
+    try {
+      while (inbox.length > 0) {
+        const e = inbox.shift()!;
+        if (e.type === 'deal' || e.type === 'snap') tableDeal(e);
+        else if (e.type === 'move') await showMove(e);
+        else if (e.type === 'resigned') {
+          if (seats && e.gameNo === tableGame) tableOver(e.ending);
+        } else if (e.type === 'think') void tableThink(e);
+      }
+    } finally {
+      showing = false;
+    }
+  }
+
+  /** The table is gone, or this page has left it: back to a game of its own. */
+  function tableGone(): void {
+    if (!link) return;
+    stopListening();
+    stopListening = () => {};
+    sit(null);
+    lobby = null;
+    inbox = [];
+    const wasPlaying = seats !== null;
+    seats = null;
+    people.clear();
+    redrawInvite?.();
+    if (wasPlaying) {
+      ai.cancel();
+      deal();
+      notice = `${t.tableClosed} ${notice}`;
+    }
+    render();
+  }
+
+  /** A game dealt by the server, or one found under way by a page that has just connected. */
+  function tableDeal(e: TableState): void {
+    ai.cancel(); // whatever was being thought over belongs to a game that is no longer on the table
+    seats = e.seats;
+    tableGame = e.gameNo;
+    tableMoves = e.moveNo;
+    game = shownFrom(e.view);
+    notice = e.moveNo === 0 ? leadNotice(e.lead.by, e.lead.by === 'trump' ? e.lead.card : undefined) : '';
+    const id = setTable();
+    moveNo = e.moveNo;
+    if (e.type === 'snap') {
+      lastWhere = new Array(DECK_SIZE).fill('hand');
+      render(false, true);
+      if (e.ending) tableOver(e.ending);
+      else turnNow(id);
+      return;
+    }
+    // Gather every card on the deck first, then let the deal fly out from there.
+    lastWhere = new Array(DECK_SIZE).fill('deck');
+    render(true);
+    setTimeout(() => {
+      if (id !== gameId) return;
+      const bots = e.seats.flatMap((s, p) => (s.kind === 'bot' ? [p] : []));
+      if (bots.length > 0) react(bots[(Math.random() * bots.length) | 0], 'greet');
+      turnNow(id);
+    }, 40);
+  }
+
+  /** Whose move it is at the shared table, and what this page is to do about it. */
+  function turnNow(id: number): void {
+    if (id !== gameId || !seats || game.phase === OVER) return;
+    const seat = game.turn;
+    awaitingHuman = false;
+    thinking = seats[seat]?.kind === 'bot' ? seat : -1;
+    if (seat !== HUMAN) {
+      const face = faces[seat]!;
+      if (thinking >= 0 && face.mood === 'thinking' && face.thought) face.mood = null;
+      render();
+      if (thinking >= 0) face.thought = true;
+      return;
+    }
+    const legal = legalActions(game, [], true);
+    // With nothing to add the pass is automatic, as in a game played here.
+    const sweeps = game.phase === ATTACK && !settings.autoDiscard;
+    if (legal.length === 1 && legal[0] === PASS && !sweeps) {
+      notice = t.nothingToAdd;
+      render();
+      const at = tableMoves;
+      setTimeout(() => {
+        if (id !== gameId || tableMoves !== at) return;
+        notice = '';
+        void tableSay('move', { action: PASS, moveNo: at }).then((ok) => {
+          if (!ok) resync();
+        });
+      }, 650);
+      return;
+    }
+    awaitingHuman = true;
+    render();
+  }
+
+  async function showMove(e: Moved): Promise<void> {
+    if (!seats || e.gameNo !== tableGame || e.moveNo <= tableMoves) return;
+    if (e.moveNo !== tableMoves + 1) {
+      resync(); // something was missed
+      return;
+    }
+    const id = gameId;
+    tableMoves = e.moveNo;
+    awaitingHuman = false;
+    thinking = -1;
+    if (game.turn === e.seat && prepare(game, e.seat, e.action, e.view)) {
+      render(false, true); // cards that stand in for each other change places unseen
+      await play(e.action, id);
+      if (id !== gameId) return;
+    }
+    if (!matches(game, e.view)) {
+      game = shownFrom(e.view);
+      render(false, true);
+    }
+    if (e.ending) tableOver(e.ending);
+    else turnNow(id);
+  }
+
+  /** The game at the shared table is over: every hand is shown as it was. */
+  function tableOver(ending: Ending): void {
+    game = revealed(game, ending);
+    awaitingHuman = false;
+    thinking = -1;
+    selected = [];
+    resigned = ending.resigned === HUMAN;
+    render(false, true);
+    finish(ending.resigned);
+  }
+
+  /** The host's page thinks for a computer player at the table, seeing only what that player may. */
+  async function tableThink(e: Think): Promise<void> {
+    if (!link?.host) return;
+    const started = performance.now();
+    const decision = await ai.request(e.obs, skillFor(ratingOf(characterById(e.id))), settings.thinkMs);
+    const pause = BOT_PAUSE - (performance.now() - started);
+    if (pause > 0) await sleep(pause);
+    if (!link || e.gameNo !== tableGame) return;
+    void ask(`tables/${link.id}/move`, { token: link.token, action: decision.action, moveNo: e.moveNo, seat: e.seat });
+  }
+
+  const esc = (text: string): string => text.replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
+
+  /**
+   * Who is expected at the table and not yet playing: a place kept for each guest still to come,
+   * and anyone who has arrived and sits down at the next deal.
+   */
+  function renderGuests(): void {
+    const el = $('guests');
+    if (!link || !lobby) {
+      el.hidden = true;
+      return;
+    }
+    const you = lobby.you;
+    const waiting = lobby.people.filter((p) => !p.seated || !seats);
+    const places = Math.max(0, lobby.maxGuests - (lobby.people.length - 1));
+    const chips = waiting
+      .filter((p) => p.key !== you)
+      .map(
+        (p) =>
+          `<span class="guest" title="${esc(p.name)}: ${seats ? t.nextDeal : t.waitingGuest}">` +
+          `<img src="${personPicture(p)}" alt=""><b>${esc(p.name)}</b></span>`,
+      );
+    for (let i = 0; i < places; i++) {
+      chips.push(`<span class="guest empty" title="${t.waitingGuest}"><i></i><b>${t.waitingGuest}</b></span>`);
+    }
+    const mine = waiting.some((p) => p.key === you);
+    const note =
+      mine && lobby.playing
+        ? t.waitingDeal
+        : places > 0 && seats === null
+          ? fill(t.waitingGuests, { n: lobby.people.length - 1, max: lobby.maxGuests })
+          : '';
+    el.innerHTML = chips.join('') + (note ? `<small>${note}</small>` : '');
+    el.hidden = chips.length === 0 && !note;
+  }
+
+  /** A row for choosing this person's picture, and what makes it work. */
+  const pictureRow = (): string =>
+    `<span class="me-picture"><img alt=""><button type="button" class="plain" data-act="picture">${t.choosePicture}</button>` +
+    `<button type="button" class="plain" data-act="no-picture">${t.noPicture}</button><input type="file" accept="image/*" hidden></span>`;
+
+  function wirePicture(root: HTMLElement, name: () => string, say: (text: string) => void): void {
+    const img = root.querySelector<HTMLImageElement>('.me-picture img')!;
+    const file = root.querySelector<HTMLInputElement>('.me-picture input')!;
+    const show = (): void => {
+      img.src = me.avatar || initialPicture(name());
+      root.querySelector<HTMLElement>('[data-act=no-picture]')!.hidden = !me.avatar;
+    };
+    show();
+    root.querySelector('[data-act=picture]')!.addEventListener('click', () => file.click());
+    root.querySelector('[data-act=no-picture]')!.addEventListener('click', () => {
+      me = { ...me, avatar: '' };
+      save('durak.me', me);
+      show();
+    });
+    file.addEventListener('change', () => {
+      const chosen = file.files?.[0];
+      if (!chosen) return;
+      shrink(chosen).then(
+        (avatar) => {
+          me = { ...me, avatar };
+          save('durak.me', me);
+          say('');
+          show();
+        },
+        () => say(t.netPicture),
+      );
+      file.value = '';
+    });
+  }
+
+  /** What to say when the table server would not do something. */
+  const refusal = (error: string): string =>
+    error === 'busy'
+      ? t.netBusy
+      : error === 'off'
+        ? t.netOff
+        : error === 'name'
+          ? t.netName
+          : error === 'avatar'
+            ? t.netPicture
+            : error === 'full'
+              ? t.joinFull
+              : error === 'gone'
+                ? t.joinGone
+                : t.netFailed;
+
+  /** Someone opened an invitation: they give a name, perhaps a picture, and sit down. */
+  async function openJoin(id: string): Promise<void> {
+    const dialog = $<HTMLDialogElement>('join');
+    const card = await ask<TableCard>(`tables/${id}`);
+    const forget = (): void => {
+      try {
+        history.replaceState(null, '', location.pathname + location.search);
+      } catch {
+        // The address keeps its ending; nothing depends on it.
+      }
+    };
+    if (failed(card)) {
+      dialog.innerHTML =
+        `<form method="dialog"><h2>${t.joinTitle}</h2><p>${refusal(card.error)}</p>` +
+        `<div class="buttons"><button class="primary">${t.close}</button></div></form>`;
+      forget();
+      dialog.showModal();
+      return;
+    }
+    dialog.innerHTML =
+      `<form method="dialog"><h2>${t.joinTitle}</h2><p>${fill(t.joinText, { name: esc(card.host) })}</p>` +
+      `<div class="row"><span>${t.yourName}</span><input type="text" name="meName" maxlength="20" value="${esc(me.name)}"></div>` +
+      `<div class="row"><span>${t.yourPicture}</span>${pictureRow()}</div>` +
+      `<p class="fine warn" data-say></p>` +
+      `<div class="buttons"><button type="button" class="plain" data-act="close">${t.close}</button>` +
+      `<button type="button" class="primary" data-act="join">${t.joinButton}</button></div></form>`;
+    const nameBox = dialog.querySelector<HTMLInputElement>('[name=meName]')!;
+    const say = (text: string): void => {
+      dialog.querySelector('[data-say]')!.textContent = text;
+    };
+    wirePicture(dialog, () => nameBox.value, say);
+    const join = async (): Promise<void> => {
+      const name = nameBox.value.trim();
+      if (!name) return say(t.netName);
+      me = { ...me, name };
+      save('durak.me', me);
+      const made = await ask<Seated>(`tables/${id}/join`, { name, avatar: me.avatar || undefined });
+      if (failed(made)) return say(refusal(made.error));
+      sit({ ...made, host: false });
+      forget();
+      startListening();
+      render();
+      dialog.close();
+    };
+    nameBox.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      void join();
+    });
+    dialog.querySelector('[data-act=join]')!.addEventListener('click', () => void join());
+    dialog.querySelector('[data-act=close]')!.addEventListener('click', () => {
+      forget();
+      dialog.close();
+    });
+    dialog.showModal();
+  }
+
+  // Set while Settings is open on its Invite tab, so that news of the table is shown there too.
+  let redrawInvite: (() => void) | null = null;
+  // Set while Settings is open: sitting down at a table or leaving it switches the training options.
+  let redrawAids: (() => void) | null = null;
 
   // -------------------------------------------------------------- human input
 
@@ -797,6 +1212,8 @@ export function startApp(): void {
 
   /** A seat's picture for its mood: picked when the mood begins, and kept until it ends. */
   function faceOf(seat: number): string {
+    const person = personAt(seat);
+    if (person) return personPicture(person); // one picture, whatever happens
     const face = faces[seat]!;
     const mood = moodOf(seat);
     if (face.mood !== mood) {
@@ -858,6 +1275,11 @@ export function startApp(): void {
     if (seat === HUMAN) return;
     if (mood) setMood(seat, mood, moodMs);
     const announces = what === 'take' || what === 'done' || what === 'pass' || what === 'transfer';
+    if (personAt(seat)) {
+      // A person has no lines of their own: only what they did is said for them.
+      if (announces) showBubble(seat, plainRemark(what, settings.lang));
+      return;
+    }
     let text = '';
     if (!settings.phrases) text = announces ? plainRemark(what, settings.lang) : '';
     else if (Math.random() < (REMARK_CHANCE[what] ?? 1)) text = remark(who(seat).id, what, settings.lang);
@@ -966,7 +1388,11 @@ export function startApp(): void {
     }
   }
 
-  function render(instant = false): void {
+  /**
+   * Draws the table. `instant` gathers every card on the deck, for a deal to fly out from; `snap`
+   * puts everything where it belongs without the cards travelling there.
+   */
+  function render(instant = false, snap = false): void {
     const rect = stage.getBoundingClientRect();
     const over = game.phase === OVER;
     const lay = (avatars: 'off' | 'normal' | 'large') =>
@@ -994,7 +1420,7 @@ export function startApp(): void {
     // The fortune-teller in the corner steps aside when the hand grows into her corner.
     tellerLink.classList.toggle('away', handLeft < tellerLink.offsetLeft + tellerLink.offsetWidth + 10);
     stage.style.setProperty('--cw', `${geo.cw}px`);
-    stage.classList.toggle('instant', instant);
+    stage.classList.toggle('instant', instant || snap);
     stage.classList.toggle('big-portraits', large);
 
     const legal = awaitingHuman ? legalActions(game, [], true) : [];
@@ -1038,8 +1464,8 @@ export function startApp(): void {
       const canPlay = mine && playable.has(c);
       el.classList.toggle('trump', aid('showTrumps') && suitOf(c) === game.trump);
       el.classList.toggle('playable', canPlay);
-      el.classList.toggle('liftable', aid('showPlayable') ? canPlay : mine && awaitingHuman);
-      el.classList.toggle('dim', aid('showPlayable') && mine && awaitingHuman && !canPlay);
+      el.classList.toggle('liftable', settings.showPlayable ? canPlay : mine && awaitingHuman);
+      el.classList.toggle('dim', settings.showPlayable && mine && awaitingHuman && !canPlay);
       el.classList.toggle('selected', selected.includes(c));
       el.classList.toggle('target', targets.has(c));
       el.classList.toggle('hinted', hinted.has(c));
@@ -1051,7 +1477,7 @@ export function startApp(): void {
       else el.removeAttribute('role');
     }
 
-    if (instant) void stage.offsetWidth; // commit the starting positions before animating away
+    if (instant || snap) void stage.offsetWidth; // commit these positions before animating away
 
     renderSeats();
     renderAim();
@@ -1059,6 +1485,7 @@ export function startApp(): void {
     renderActions(legal, over);
     renderBar();
     renderLog();
+    renderGuests();
   }
 
   function renderLog(): void {
@@ -1275,6 +1702,7 @@ export function startApp(): void {
       status = t.beaten;
       button(t.clear, 'primary', clearTable);
     } else if (thinking >= 0) status = fill(t.thinking, { name: seatName(thinking) });
+    else if (seats && !awaitingHuman && personAt(game.turn)) status = fill(t.turnOf, { name: seatName(game.turn) });
     else if (awaitingHuman) {
       const hinting = showHint && advice ? decodeAction(advice.action).type : '';
       if (game.phase === DEFEND) {
@@ -1354,7 +1782,7 @@ export function startApp(): void {
     // The order of picking is the order of seating, clockwise from the player's left.
     // The roster opens on the group of whoever sits first.
     let picked = [...settings.opponents];
-    let shown = characterById(picked[0]).style;
+    let shown: Character['style'] | 'invite' = characterById(picked[0]).style;
     const roster = (): string =>
       CHARACTERS.filter((c) => c.style === shown)
         .map((c) => {
@@ -1395,8 +1823,12 @@ export function startApp(): void {
       check('firstBoutFive', t.setFive, settings.firstBoutFive) +
       `</fieldset>` +
       `<fieldset class="group"><legend>${t.setOpponents}</legend>` +
-      seg('shown', [['real', t.realistic], ['cartoon', t.cartoon], ['fable', t.fable]], shown) +
-      `<div class="roster"></div><p class="fine">${t.pickHint}</p>` +
+      seg(
+        'shown',
+        [['real', t.realistic], ['cartoon', t.cartoon], ['fable', t.fable], ...(__NETWORK__ ? [['invite', t.invite] as [string, string]] : [])],
+        shown,
+      ) +
+      `<div class="roster"></div><div class="invite" hidden></div><p class="fine pick-hint">${t.pickHint}</p>` +
       `</fieldset>` +
       `</div><div class="col">` +
       `<fieldset class="group"><legend>${t.secTable}</legend>` +
@@ -1405,17 +1837,17 @@ export function startApp(): void {
       check('phrases', t.setPhrases, settings.phrases) +
       check('speech', t.setSpeech, settings.speech) +
       check('autoDiscard', t.setAutoDiscard, settings.autoDiscard) +
+      check('showPlayable', t.setPlayable, settings.showPlayable) +
       check('showArrow', t.setArrow, settings.showArrow) +
       check('trumpCount', t.setTrumpCount, settings.trumpCount) +
       check('stats', t.setStats, settings.stats) +
       `</fieldset>` +
       // The aids for learning the game, apart from the rest.
-      `<fieldset class="group training"${settings.training ? '' : ' disabled'}>` +
+      `<fieldset class="group training">` +
       `<legend title="${t.aidNote}"><label><input type="checkbox" name="training"${settings.training ? ' checked' : ''}>` +
       `<span>${t.training}</span></label></legend>` +
-      `<p class="fine">${t.aidNote}</p>` +
+      `<p class="fine">${t.aidNote}</p><p class="fine not-here" hidden>${t.notAtTable}</p>` +
       check('showKnown', t.setKnown, settings.showKnown) +
-      check('showPlayable', t.setPlayable, settings.showPlayable) +
       check('showTrumps', t.setTrumps, settings.showTrumps) +
       check('hints', t.setHints, settings.hints) +
       check('chance', t.setChance, settings.chance) +
@@ -1430,7 +1862,124 @@ export function startApp(): void {
       `<button class="primary" value="start">${t.start}</button></div></form>`;
     const form = settingsDialog.querySelector('form')!;
     const rosterEl = form.querySelector<HTMLElement>('.roster')!;
-    rosterEl.innerHTML = roster();
+    const inviteEl = form.querySelector<HTMLElement>('.invite')!;
+    // The Invite tab: a shared table for real people, made on the table server.
+    let maxGuests = 1;
+    let waitAll = false;
+    let keepBots = true;
+    const drawInvite = (): void => {
+      const say = (text: string): void => {
+        const line = inviteEl.querySelector('[data-say]');
+        if (line) line.textContent = text;
+      };
+      if (!link) {
+        inviteEl.innerHTML =
+          `<p class="fine">${t.inviteIntro}</p>` +
+          row(t.yourName, `<input type="text" name="meName" maxlength="20" value="${esc(me.name)}">`) +
+          row(t.yourPicture, pictureRow()) +
+          row(t.guestsMax, seg('maxGuests', [['1', '1'], ['2', '2'], ['3', '3']], String(maxGuests))) +
+          check('waitAll', t.waitAll, waitAll) +
+          check('keepBots', t.keepBots, keepBots) +
+          `<p class="fine warn" data-say></p>` +
+          `<button type="button" class="primary" data-act="invite">${t.inviteButton}</button>`;
+        const nameBox = inviteEl.querySelector<HTMLInputElement>('[name=meName]')!;
+        wirePicture(inviteEl, () => nameBox.value, say);
+        // Enter in the name box must not start a new game.
+        nameBox.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') e.preventDefault();
+        });
+        for (const radio of inviteEl.querySelectorAll<HTMLInputElement>('[name=maxGuests]')) {
+          radio.addEventListener('change', () => {
+            maxGuests = Number(radio.value);
+          });
+        }
+        const waitBox = inviteEl.querySelector<HTMLInputElement>('[name=waitAll]')!;
+        waitBox.addEventListener('change', () => {
+          waitAll = waitBox.checked;
+        });
+        const botsBox = inviteEl.querySelector<HTMLInputElement>('[name=keepBots]')!;
+        botsBox.addEventListener('change', () => {
+          keepBots = botsBox.checked;
+        });
+        inviteEl.querySelector('[data-act=invite]')!.addEventListener('click', () => {
+          const name = nameBox.value.trim();
+          if (!name) return say(t.netName);
+          me = { ...me, name };
+          save('durak.me', me);
+          // The table is played by the rules and against the opponents chosen in this dialog.
+          const data = new FormData(form);
+          const rules = {
+            transfer: data.get('transfer') === '1',
+            firstBoutFive: data.has('firstBoutFive'),
+            nextLead: data.get('nextLead') === 'fool' ? ('fool' as const) : ('winner' as const),
+          };
+          const request = { name, avatar: me.avatar || undefined, bots: keepBots ? picked : [], maxGuests, waitAll, rules };
+          void ask<Seated>('tables', request).then((made) => {
+            if (failed(made)) return say(refusal(made.error));
+            settings = { ...settings, ...rules, opponents: picked };
+            save('durak.settings', settings);
+            sit({ ...made, host: true });
+            startListening();
+            render();
+            drawInvite();
+          });
+        });
+        return;
+      }
+      // At a table: who is there, and the way out of it. The host also has the link to hand round.
+      const host = lobby?.people.find((p) => p.host);
+      const list = (lobby?.people ?? [])
+        .map(
+          (p) =>
+            `<li><img src="${personPicture(p)}" alt=""><b>${esc(p.name)}</b>` +
+            `<i>${!p.here ? t.away : !p.seated && lobby?.playing ? t.nextDeal : ''}</i></li>`,
+        )
+        .join('');
+      const places = lobby ? Math.max(0, lobby.maxGuests - (lobby.people.length - 1)) : 0;
+      const empty = `<li class="empty"><span></span><i>${t.waitingGuest}</i></li>`.repeat(places);
+      const address = inviteUrl(link.id);
+      inviteEl.innerHTML =
+        (link.host
+          ? `<p class="fine">${t.inviteLink}</p>` +
+            `<div class="invite-link"><input type="text" readonly value="${esc(address)}">` +
+            `<button type="button" class="plain" data-act="copy">${t.copy}</button></div>`
+          : `<p>${fill(t.atTable, { name: esc(host?.name ?? '…') })}</p>`) +
+        `<p class="fine">${t.tablePeople}</p><ul class="table-people">${list}${empty}</ul>` +
+        `<button type="button" class="plain danger" data-act="leave">${link.host ? t.destroyTable : t.leaveTable}</button>`;
+      const box = inviteEl.querySelector<HTMLInputElement>('.invite-link input');
+      box?.addEventListener('focus', () => box.select());
+      inviteEl.querySelector<HTMLElement>('[data-act=copy]')?.addEventListener('click', (e) => {
+        const button = e.currentTarget as HTMLElement;
+        const done = (): void => {
+          button.textContent = t.copied;
+        };
+        // Where the clipboard may not be written to, the address is left selected to be copied by hand.
+        if (navigator.clipboard) navigator.clipboard.writeText(address).then(done, () => box?.select());
+        else box?.select();
+      });
+      inviteEl.querySelector('[data-act=leave]')!.addEventListener('click', () => {
+        void tableSay('leave').then(tableGone);
+      });
+    };
+    const showRoster = (): void => {
+      const inviting = shown === 'invite';
+      rosterEl.hidden = inviting;
+      inviteEl.hidden = !inviting;
+      form.querySelector<HTMLElement>('.pick-hint')!.hidden = inviting;
+      redrawInvite = inviting ? drawInvite : null;
+      if (inviting) drawInvite();
+      else rosterEl.innerHTML = roster();
+    };
+    // The training options: off with their own switch, and off altogether at a shared table.
+    redrawAids = (): void => {
+      const group = form.querySelector<HTMLFieldSetElement>('.training')!;
+      group.disabled = !settings.training || link !== null;
+      group.querySelector<HTMLInputElement>('[name=training]')!.disabled = link !== null;
+      group.querySelector<HTMLElement>('.not-here')!.hidden = link === null;
+    };
+    redrawAids();
+    settingsDialog.addEventListener('close', () => (redrawInvite = redrawAids = null), { once: true });
+    showRoster();
     rosterEl.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       const id = target.closest<HTMLElement>('.pick')?.dataset.id;
@@ -1454,12 +2003,12 @@ export function startApp(): void {
       } else {
         picked = [...picked, id].slice(-3); // a fourth pick replaces the first
       }
-      rosterEl.innerHTML = roster();
+      showRoster();
     });
     for (const radio of form.querySelectorAll<HTMLInputElement>('[name=shown]')) {
       radio.addEventListener('change', () => {
         shown = radio.value as typeof shown;
-        rosterEl.innerHTML = roster();
+        showRoster();
       });
     }
     form.querySelector('[data-act=close]')!.addEventListener('click', () => settingsDialog.close());
@@ -1500,11 +2049,11 @@ export function startApp(): void {
       const box = form.querySelector<HTMLInputElement>(`[name=${name}]`)!;
       box.addEventListener('change', () => {
         apply({ [name]: box.checked });
-        if (name === 'speech') rosterEl.innerHTML = roster(); // the "hear" buttons come and go
-        if (name === 'training') form.querySelector('.training')!.toggleAttribute('disabled', !box.checked);
+        if (name === 'speech') showRoster(); // the "hear" buttons come and go
+        if (name === 'training') redrawAids?.();
         if (name === 'portraits') {
           showKinds();
-          rosterEl.innerHTML = roster();
+          showRoster();
         }
       });
     }
@@ -1637,5 +2186,12 @@ export function startApp(): void {
 
   const firstVisit = load<Partial<Settings>>('durak.settings', {}).opponents === undefined;
   deal();
-  if (firstVisit) openSettings();
+  // An invitation is answered first. Failing one, a page that was at a table goes back to it.
+  const invited = __NETWORK__ ? invitedTo() : null;
+  if (!__NETWORK__) link = null;
+  if (invited && invited !== link?.id) {
+    sit(null);
+    void openJoin(invited);
+  } else if (link) startListening();
+  else if (firstVisit) openSettings();
 }

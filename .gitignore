@@ -3,3 +3,5 @@ dist
 .playwright-mcp
 tools
 deploy.env
+network.env
+dist-net

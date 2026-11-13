@@ -1,0 +1,25 @@
+# The table server: shared tables for a game with invited people (server/main.ts, built into
+# server.mjs). Installed by deploy.sh while network.env says NETWORK=on; stopped and started
+# with network.bat. It listens on this machine only, behind nginx's /network/api/.
+[Unit]
+Description=Podkidnoy - shared tables
+After=network.target
+
+[Service]
+Type=simple
+# No account of its own to look after: a throwaway user, which may write only its count of games.
+DynamicUser=yes
+StateDirectory=podkidnoy-net
+EnvironmentFile=/opt/podkidnoy/net/network.env
+Environment=NETWORK_STATS=/var/lib/podkidnoy-net/games.log
+ExecStart=/opt/podkidnoy/node/bin/node /opt/podkidnoy/net/server.mjs
+Restart=on-failure
+RestartSec=3
+MemoryMax=200M
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
