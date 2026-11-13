@@ -168,6 +168,10 @@ const en = {
   waitingGuests: 'Waiting for guests: {n} of {max}.',
   theyResigned: '{name} resigned, and is the fool.',
   turnOf: '{name} to move…',
+  say: 'Say',
+  sayTitle: 'Say to the table',
+  send: 'Send',
+  sayHush: 'One moment: not so fast.',
   fortuneCalls: [
     'Take a break, sweetheart, let me read your cards!',
     'Enough Durak! Let me tell you who the fool is.',
@@ -344,6 +348,10 @@ const ru: typeof en = {
   waitingGuests: 'Ждём гостей: {n} из {max}.',
   theyResigned: '{name} сдаётся и остаётся в дураках.',
   turnOf: 'Ходит {name}…',
+  say: 'Сказать',
+  sayTitle: 'Сказать за столом',
+  send: 'Отправить',
+  sayHush: 'Секунду: не так быстро.',
   fortuneCalls: [
     'Отдохни, золотце, дай погадаю!',
     'Хватит в дурака! Давай погадаю, кто тут дурак.',
@@ -520,6 +528,10 @@ const fr: typeof en = {
   waitingGuests: 'En attente des invités : {n} sur {max}.',
   theyResigned: '{name} abandonne, et reste le dourak.',
   turnOf: 'Au tour de {name}…',
+  say: 'Dire',
+  sayTitle: 'Dire à la table',
+  send: 'Envoyer',
+  sayHush: 'Un instant : pas si vite.',
   fortuneCalls: [
     'Repose-toi, mon trésor, je vais te tirer les cartes !',
     'Assez joué au dourak ! Je vais te dire qui est le sot.',

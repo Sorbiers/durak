@@ -47,12 +47,14 @@ export const LIMITS: Limits = {
   idleMs: 180_000,
 };
 
-export type Refusal = 'busy' | 'gone' | 'full' | 'name' | 'avatar' | 'denied' | 'stale' | 'illegal';
+export type Refusal = 'busy' | 'gone' | 'full' | 'name' | 'avatar' | 'denied' | 'stale' | 'illegal' | 'hush';
 export const refused = (x: unknown): x is { error: Refusal } =>
   typeof x === 'object' && x !== null && 'error' in x;
 const no = (error: Refusal): { error: Refusal } => ({ error });
 
 const NAME_LENGTH = 20;
+export const SAY_LENGTH = 140; // of a phrase said to the table
+const SAY_EVERY = 1500; // one person's phrases come no closer together than this, ms
 const AVATAR = /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/;
 const AVATAR_LENGTH = 80_000; // of the data: address; about 60 KB of picture
 const BOT = /^[a-z]{2,20}$/;
@@ -63,6 +65,7 @@ interface Person {
   name: string;
   avatar: string | null;
   host: boolean;
+  saidAt: number; // when they last said something
   sinks: Set<(e: ServerEvent) => void>; // the pages this person has open
 }
 
@@ -110,11 +113,12 @@ function word(length: number): string {
   return Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join('');
 }
 
-function cleanName(raw: unknown): string {
+function clean(raw: unknown, length: number): string {
   return typeof raw === 'string'
-    ? raw.replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, NAME_LENGTH)
+    ? raw.replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, length)
     : '';
 }
+const cleanName = (raw: unknown): string => clean(raw, NAME_LENGTH);
 
 export class Tables {
   private tables = new Map<string, Table>();
@@ -146,7 +150,7 @@ export class Tables {
       if (typeof raw.avatar !== 'string' || raw.avatar.length > AVATAR_LENGTH || !AVATAR.test(raw.avatar)) return no('avatar');
       avatar = raw.avatar;
     }
-    return { key: word(8), token: word(24), name, avatar, host, sinks: new Set() };
+    return { key: word(8), token: word(24), name, avatar, host, saidAt: -Infinity, sinks: new Set() };
   }
 
   create(req: CreateRequest): Seated | { error: Refusal } {
@@ -271,6 +275,19 @@ export class Tables {
     const { t, who } = found;
     if (t.game && t.game.phase !== OVER && !who.host) return no('denied');
     if (!this.deal(t)) return no('stale');
+    return { ok: true };
+  }
+
+  /** A phrase said to the table: passed on to everyone else there, seated or waiting, and not kept. */
+  say(id: string, token: string, req: { text?: unknown }): { ok: true } | { error: Refusal } {
+    const found = this.find(id, token);
+    if (refused(found)) return found;
+    const { t, who } = found;
+    const text = clean(req.text, SAY_LENGTH);
+    if (!text) return no('illegal');
+    if (this.now() - who.saidAt < SAY_EVERY) return no('hush');
+    who.saidAt = this.now();
+    for (const p of t.people) if (p !== who) this.send(p, { type: 'said', key: who.key, name: who.name, text });
     return { ok: true };
   }
 

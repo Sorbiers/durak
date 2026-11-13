@@ -178,6 +178,8 @@ browser before it is sent.
   player's view. If the host is away, the server plays a rule-of-thumb move for them, as it does
   for a person who has gone.
 - The self-training options are switched off at a shared table, all of them.
+- **Say** opens a line to type: up to 140 characters, shown as a speech bubble by the speaker's
+  place on everyone's screen. The server passes it on and does not keep it.
 - A table is kept for 12 hours after it was last played at. The host can destroy it from the same
   tab, and a guest can leave it there. Ten tables can be in use at once.
 

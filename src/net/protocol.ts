@@ -94,7 +94,15 @@ export interface Closed {
   type: 'closed';
 }
 
-export type ServerEvent = Lobby | Snapshot | Moved | Resigned | Think | Closed;
+/** Someone at the table said something. It is passed on to the others and not kept. */
+export interface Said {
+  type: 'said';
+  key: string; // who, by the key the table knows them by
+  name: string;
+  text: string;
+}
+
+export type ServerEvent = Lobby | Snapshot | Moved | Resigned | Think | Closed | Said;
 
 export interface CreateRequest {
   name: string;

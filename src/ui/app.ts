@@ -654,6 +654,7 @@ export function startApp(): void {
       renderGuests();
       redrawInvite?.();
     } else if (e.type === 'closed') tableGone();
+    else if (e.type === 'said') heard(e.key, e.name, e.text);
     else {
       inbox.push(e);
       void showNext();
@@ -676,6 +677,55 @@ export function startApp(): void {
     } finally {
       showing = false;
     }
+  }
+
+  let saidTimer = 0;
+  /** Something said at the table: a bubble by the speaker's seat, or the status line for one who is
+   *  still waiting for the next deal. */
+  function heard(key: string, name: string, text: string): void {
+    const seat = seats ? seats.findIndex((s) => s.kind === 'person' && s.key === key) : -1;
+    if (seat >= 0 && seatEls[seat]) return showBubble(seat, text);
+    const line = `${name}: ${text}`;
+    notice = line;
+    render();
+    clearTimeout(saidTimer);
+    saidTimer = window.setTimeout(() => {
+      if (notice !== line) return;
+      notice = '';
+      render();
+    }, 2500 + text.length * 45);
+  }
+
+  /** The Say button: a line of text for everyone at the table. */
+  function openSay(): void {
+    const dialog = $<HTMLDialogElement>('say');
+    dialog.innerHTML =
+      `<form method="dialog"><h2>${t.sayTitle}</h2>` +
+      `<input type="text" name="phrase" maxlength="140" autocomplete="off" enterkeyhint="send">` +
+      `<p class="fine warn" data-say></p>` +
+      `<div class="buttons"><button type="button" class="plain" data-act="close">${t.close}</button>` +
+      `<button type="button" class="primary" data-act="send">${t.send}</button></div></form>`;
+    const box = dialog.querySelector<HTMLInputElement>('[name=phrase]')!;
+    const send = async (): Promise<void> => {
+      const text = box.value.replace(/\s+/g, ' ').trim();
+      if (!text || !link) return;
+      const done = await ask<{ ok: true }>(`tables/${link.id}/say`, { token: link.token, text });
+      if (failed(done)) {
+        dialog.querySelector('[data-say]')!.textContent = done.error === 'hush' ? t.sayHush : refusal(done.error);
+        return;
+      }
+      dialog.close();
+      heard(lobby?.you ?? '', me.name, text);
+    };
+    box.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      void send();
+    });
+    dialog.querySelector('[data-act=send]')!.addEventListener('click', () => void send());
+    dialog.querySelector('[data-act=close]')!.addEventListener('click', () => dialog.close());
+    dialog.showModal();
+    box.focus();
   }
 
   /** The table is gone, or this page has left it: back to a game of its own. */
@@ -1727,6 +1777,8 @@ export function startApp(): void {
       if (selected.length) button(t.cancel, 'plain', cancelSelection);
       if (aid('hints')) button(t.hint, 'plain', askHint);
     }
+    // At a shared table there is always something to say, whoever is to move.
+    if (link) button(t.say, 'plain', openSay);
     // Resigning is kept in the corner, well away from the buttons used on every move.
     const resignButton = $('resign');
     resignButton.hidden = !awaitingHuman || over;

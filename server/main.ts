@@ -46,6 +46,7 @@ const STATUS: Record<Refusal, number> = {
   name: 400,
   avatar: 400,
   illegal: 400,
+  hush: 429,
 };
 
 function reply(res: ServerResponse, status: number, body: unknown): void {
@@ -138,6 +139,8 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
       return answer(res, tables.resign(id, token));
     case 'again':
       return answer(res, tables.again(id, token));
+    case 'say':
+      return answer(res, tables.say(id, token, sent as never));
     case 'leave':
       return answer(res, tables.leave(id, token));
     default:

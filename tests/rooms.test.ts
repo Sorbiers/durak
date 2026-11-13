@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { OVER, legalActions } from '../src/engine/game';
 import { Observation, determinize } from '../src/engine/observe';
 import { mulberry32 } from '../src/engine/rng';
-import { CreateRequest, Moved, Seated, ServerEvent, Snapshot, Think } from '../src/net/protocol';
+import { CreateRequest, Moved, Said, Seated, ServerEvent, Snapshot, Think } from '../src/net/protocol';
 import { LIMITS, Tables, refused } from '../src/net/rooms';
 
 const RULES = { transfer: true, firstBoutFive: true, nextLead: 'fool' as const };
@@ -192,5 +192,27 @@ describe('shared tables', () => {
       expect(end.view.phase).toBe(OVER);
       expect(end.ending).toBeDefined();
     }
+  });
+
+  it('passes a phrase on to the others, cleaned and cut, and not too often', () => {
+    const { tables, made, pass } = setup();
+    const host = page(tables, made);
+    const joined = tables.join(made.id, { name: 'Guest' });
+    if (refused(joined)) throw new Error(joined.error);
+    const guest = page(tables, joined);
+
+    expect(tables.say(made.id, joined.token, { text: '  <b>hello</b>\n there ' + 'x'.repeat(200) })).toEqual({ ok: true });
+    const heard = host.last<Said>('said')!;
+    expect(heard.name).toBe('Guest');
+    expect(heard.text.startsWith('bhello/b there x')).toBe(true);
+    expect(heard.text.length).toBe(140);
+    expect(guest.last<Said>('said')).toBeUndefined(); // not back to whoever said it
+
+    expect(tables.say(made.id, joined.token, { text: 'again' })).toEqual({ error: 'hush' });
+    pass(2000);
+    expect(tables.say(made.id, joined.token, { text: 'again' })).toEqual({ ok: true });
+    pass(2000);
+    expect(tables.say(made.id, joined.token, { text: '   ' })).toEqual({ error: 'illegal' });
+    expect(tables.say(made.id, 'nobody', { text: 'hi' })).toEqual({ error: 'denied' });
   });
 });

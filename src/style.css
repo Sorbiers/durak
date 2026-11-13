@@ -1741,3 +1741,23 @@ dialog input[type='text']:focus-visible {
 #join {
   width: min(94vw, 460px);
 }
+
+/* Saying something at a shared table: one line of text. */
+#say {
+  width: min(94vw, 460px);
+}
+#say input[type='text'] {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  padding: 8px 10px;
+}
+/* The player's own words rise above their place rather than drop off the screen. */
+.seat.me .bubble {
+  top: auto;
+  bottom: calc(100% + 10px);
+}
+.seat.me .bubble::before {
+  top: auto;
+  bottom: -5px;
+}
