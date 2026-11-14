@@ -9,10 +9,13 @@ import { Observation } from '../engine/observe';
 /** The address of the server's part of the site, under the site root. */
 export const API = 'network/api/';
 
+/** The host's settings of the game, which hold for everyone at the table. A change to the rules
+ *  holds from the next deal; clearing beaten cards, at once. */
 export interface TableRules {
   transfer: boolean;
   firstBoutFive: boolean;
   nextLead: 'winner' | 'fool';
+  autoDiscard: boolean; // a beaten bout is swept away without waiting for anyone
 }
 
 /** Who sits in a seat: a person, by the key the table knows them by, or a computer player. */
@@ -20,13 +23,17 @@ export type SeatInfo =
   | { kind: 'person'; key: string; name: string; avatar: boolean }
   | { kind: 'bot'; id: string };
 
+/** Whether a person's page is there: connected and looked at, connected but in another window or
+ *  tab, or not heard from. */
+export type Presence = 'here' | 'unfocused' | 'away';
+
 /** A person at the table, seated or still waiting for the next deal. */
 export interface PersonInfo {
   key: string;
   name: string;
   avatar: boolean;
   host: boolean;
-  here: boolean; // their page is connected
+  presence: Presence;
   seated: boolean; // dealt into the game being played
 }
 
@@ -102,7 +109,12 @@ export interface Said {
   text: string;
 }
 
-export type ServerEvent = Lobby | Snapshot | Moved | Resigned | Think | Closed | Said;
+/** Sent now and then on every page's stream, so that a page can tell a quiet line from a dead one. */
+export interface Beat {
+  type: 'beat';
+}
+
+export type ServerEvent = Lobby | Snapshot | Moved | Resigned | Think | Closed | Said | Beat;
 
 export interface CreateRequest {
   name: string;

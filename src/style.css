@@ -1807,3 +1807,37 @@ body:has(#stage.awaiting-deal) #score {
   font-size: 17px;
   text-align: center;
 }
+
+/* A person's presence at a shared table: green, connected and looking; yellow, connected but in
+   another window or tab; red, not connected. */
+.dot {
+  flex: none;
+  align-self: center;
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 5px;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: #9a9a9a;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+.dot[hidden] {
+  display: none;
+}
+.seat .dot {
+  margin-right: -2px;
+}
+.dot.here {
+  background: #3ec46d;
+  box-shadow: 0 0 6px rgba(62, 196, 109, 0.7);
+}
+.dot.unfocused {
+  background: #e8c33a;
+  box-shadow: 0 0 6px rgba(232, 195, 58, 0.6);
+}
+.dot.away {
+  background: #e0483e;
+  box-shadow: 0 0 6px rgba(224, 72, 62, 0.6);
+}
+

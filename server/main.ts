@@ -96,7 +96,8 @@ function listen(res: ServerResponse, id: string, token: string): void {
   res.write(': hello\n\n');
   open = true;
   streams.add(res);
-  const beat = setInterval(() => res.write(': still here\n\n'), 25_000);
+  // A beat the page can see, unlike a comment: a page that hears nothing for a while reconnects.
+  const beat = setInterval(() => res.write('data: {"type":"beat"}\n\n'), 15_000);
   res.on('close', () => {
     clearInterval(beat);
     streams.delete(res);
@@ -139,6 +140,10 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
       return answer(res, tables.resign(id, token));
     case 'again':
       return answer(res, tables.again(id, token));
+    case 'ping':
+      return answer(res, tables.ping(id, token, sent as never));
+    case 'rules':
+      return answer(res, tables.setRules(id, token, sent as never));
     case 'say':
       return answer(res, tables.say(id, token, sent as never));
     case 'leave':

@@ -5,7 +5,7 @@ import { mulberry32 } from '../src/engine/rng';
 import { CreateRequest, Moved, Said, Seated, ServerEvent, Snapshot, Think } from '../src/net/protocol';
 import { LIMITS, Tables, refused } from '../src/net/rooms';
 
-const RULES = { transfer: true, firstBoutFive: true, nextLead: 'fool' as const };
+const RULES = { transfer: true, firstBoutFive: true, nextLead: 'fool' as const, autoDiscard: true };
 const table = (over: Partial<CreateRequest> = {}): CreateRequest => ({
   name: 'Host',
   bots: ['lev'],
@@ -233,4 +233,58 @@ describe('shared tables', () => {
     expect(tables.say(made.id, joined.token, { text: '   ' })).toEqual({ error: 'illegal' });
     expect(tables.say(made.id, 'nobody', { text: 'hi' })).toEqual({ error: 'denied' });
   });
+
+  it('tells the table who is there, who looks elsewhere and who has gone quiet', () => {
+    const { tables, made, pass } = setup();
+    const host = page(tables, made);
+    const joined = tables.join(made.id, { name: 'Guest' });
+    if (refused(joined)) throw new Error(joined.error);
+    const presence = () =>
+      host.last<ServerEvent & { type: 'lobby' }>('lobby')!.people.map((p) => [p.name, p.presence]);
+
+    expect(presence()).toEqual([['Host', 'here'], ['Guest', 'away']]); // invited, page not open yet
+    const guest = page(tables, joined);
+    expect(presence()).toEqual([['Host', 'here'], ['Guest', 'here']]);
+
+    expect(tables.ping(made.id, joined.token, { focused: false })).toEqual({ ok: true });
+    expect(presence()).toEqual([['Host', 'here'], ['Guest', 'unfocused']]);
+    tables.ping(made.id, joined.token, { focused: true });
+    expect(presence()).toEqual([['Host', 'here'], ['Guest', 'here']]);
+
+    // The guest's line stays open but nothing more is heard: gone, once the time is up.
+    pass(LIMITS.aliveMs - 1000);
+    tables.ping(made.id, made.token, {});
+    tables.tick();
+    expect(presence()).toEqual([['Host', 'here'], ['Guest', 'here']]);
+    pass(2000);
+    tables.ping(made.id, made.token, {});
+    tables.tick();
+    expect(presence()).toEqual([['Host', 'here'], ['Guest', 'away']]);
+    tables.ping(made.id, joined.token, {});
+    expect(presence()).toEqual([['Host', 'here'], ['Guest', 'here']]);
+
+    guest.stop(); // the page is closed
+    expect(presence()).toEqual([['Host', 'here'], ['Guest', 'away']]);
+    expect(tables.ping(made.id, 'nobody', {})).toEqual({ error: 'denied' });
+  });
+
+  it("plays by the host's settings of the game, changed for everyone from the next deal", () => {
+    const { tables, made } = setup(9, table({ rules: { ...RULES, transfer: false } }));
+    const host = page(tables, made);
+    const joined = tables.join(made.id, { name: 'Guest' });
+    if (refused(joined)) throw new Error(joined.error);
+    const guest = page(tables, joined);
+    expect(host.last<Snapshot>('deal', 'snap')!.view.rules.transfer).toBe(false);
+
+    const perevodnoy = { ...RULES, transfer: true, autoDiscard: false };
+    expect(tables.setRules(made.id, joined.token, { rules: perevodnoy })).toEqual({ error: 'denied' });
+    expect(tables.setRules(made.id, made.token, { rules: perevodnoy })).toEqual({ ok: true });
+    expect(guest.last<ServerEvent & { type: 'lobby' }>('lobby')!.rules).toEqual(perevodnoy);
+    expect(host.last<Snapshot>('deal', 'snap')!.view.rules.transfer).toBe(false); // the game under way keeps its own
+
+    expect(tables.again(made.id, made.token)).toEqual({ ok: true });
+    expect(host.last<Snapshot>('deal')!.view.rules.transfer).toBe(true);
+    expect(guest.last<Snapshot>('deal')!.view.rules.transfer).toBe(true);
+  });
 });
+

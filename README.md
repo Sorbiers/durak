@@ -177,7 +177,14 @@ browser before it is sent.
 - The computer players at a shared table think in the host's browser, which is sent only that
   player's view. If the host is away, the server plays a rule-of-thumb move for them. It never
   moves for a person: the table waits for them, and the host can deal again.
+- The settings of the game (the variant, who leads the next game, five cards in the first bout,
+  clearing beaten cards) are the host's. A guest sees them but cannot change them; a change the
+  host makes holds for everyone from the next deal, and clearing beaten cards at once.
 - The self-training options are switched off at a shared table, all of them.
+- A dot by each person's name says whether they are there: green, connected; yellow, connected
+  but in another window or tab; red, not connected. Each page tells the server every 10 seconds
+  (and at once when it gains or loses focus), and one not heard from for 25 seconds shows red. The
+  server beats on each page's stream, and a page that hears nothing for 40 seconds reconnects.
 - **Say** opens a line to type: up to 140 characters, shown as a speech bubble by the speaker's
   place on everyone's screen. The server passes it on and does not keep it.
 - A table is come to by its link. The page at a table has the link as its address, so a reload

@@ -8,6 +8,7 @@ import {
   JoinRequest,
   LeadReason,
   Lobby,
+  Presence,
   Seated,
   SeatInfo,
   ServerEvent,
@@ -27,6 +28,7 @@ export interface Limits {
   maxGuests: number; // invited people at one table
   maxSeats: number; // players in one game, people and computer players together
   keepMs: number; // a table goes this long after it was last used
+  aliveMs: number; // a page not heard from for this long is taken to be gone, connected or not
   activeMs: number; // a table counts as in use this long after its last move
   botMs: number; // a computer player's move is awaited from the host's page this long
   botAloneMs: number; // ... and this long when the host's page is not there
@@ -38,6 +40,7 @@ export const LIMITS: Limits = {
   maxGuests: 3,
   maxSeats: 4,
   keepMs: 12 * 3600_000,
+  aliveMs: 25_000,
   activeMs: 15 * 60_000,
   botMs: 30_000,
   botAloneMs: 3_000,
@@ -62,6 +65,9 @@ interface Person {
   avatar: string | null;
   host: boolean;
   saidAt: number; // when they last said something
+  seenAt: number; // when their page last connected or sent its keepalive
+  focused: boolean; // their page, by its last keepalive, is the one they are looking at
+  told: Presence; // their presence as the table was last told it
   sinks: Set<(e: ServerEvent) => void>; // the pages this person has open
 }
 
@@ -116,6 +122,16 @@ function clean(raw: unknown, length: number): string {
 }
 const cleanName = (raw: unknown): string => clean(raw, NAME_LENGTH);
 
+function cleanRules(raw: unknown): TableRules {
+  const r = (typeof raw === 'object' && raw !== null ? raw : {}) as Partial<Record<keyof TableRules, unknown>>;
+  return {
+    transfer: r.transfer === true,
+    firstBoutFive: r.firstBoutFive !== false,
+    nextLead: r.nextLead === 'winner' ? 'winner' : 'fool',
+    autoDiscard: r.autoDiscard !== false,
+  };
+}
+
 export class Tables {
   private tables = new Map<string, Table>();
 
@@ -146,7 +162,10 @@ export class Tables {
       if (typeof raw.avatar !== 'string' || raw.avatar.length > AVATAR_LENGTH || !AVATAR.test(raw.avatar)) return no('avatar');
       avatar = raw.avatar;
     }
-    return { key: word(8), token: word(24), name, avatar, host, saidAt: -Infinity, sinks: new Set() };
+    return {
+      key: word(8), token: word(24), name, avatar, host, saidAt: -Infinity,
+      seenAt: this.now(), focused: true, told: 'away', sinks: new Set(),
+    };
   }
 
   create(req: CreateRequest): Seated | { error: Refusal } {
@@ -168,11 +187,7 @@ export class Tables {
       bots: [...new Set(bots)],
       maxGuests,
       waitAll: req.waitAll === true,
-      rules: {
-        transfer: req.rules?.transfer === true,
-        firstBoutFive: req.rules?.firstBoutFive !== false,
-        nextLead: req.rules?.nextLead === 'winner' ? 'winner' : 'fool',
-      },
+      rules: cleanRules(req.rules),
       touched: this.now(),
       gameNo: 0,
       game: null,
@@ -215,6 +230,7 @@ export class Tables {
     if (refused(found)) return found;
     const { t, who } = found;
     who.sinks.add(sink);
+    who.seenAt = this.now();
     this.tellLobby(t);
     const seat = this.seatOf(t, who);
     if (t.game && seat >= 0) {
@@ -225,6 +241,18 @@ export class Tables {
       who.sinks.delete(sink);
       if (this.tables.get(id) === t) this.tellLobby(t);
     };
+  }
+
+  /** A page's keepalive, every few seconds and whenever it gains or loses the person's attention.
+   *  It does not count as using the table, so an open page alone does not keep one for ever. */
+  ping(id: string, token: string, req: { focused?: unknown }): { ok: true } | { error: Refusal } {
+    const found = this.find(id, token);
+    if (refused(found)) return found;
+    const { t, who } = found;
+    who.seenAt = this.now();
+    who.focused = req.focused !== false;
+    if (this.presence(who) !== who.told) this.tellLobby(t);
+    return { ok: true };
   }
 
   avatar(id: string, key: string): string | null {
@@ -276,6 +304,17 @@ export class Tables {
     return { ok: true };
   }
 
+  /** The host changes the settings of the game: they hold for everyone, from the next deal. */
+  setRules(id: string, token: string, req: { rules?: unknown }): { ok: true } | { error: Refusal } {
+    const found = this.find(id, token);
+    if (refused(found)) return found;
+    const { t, who } = found;
+    if (!who.host) return no('denied');
+    t.rules = cleanRules(req.rules);
+    this.tellLobby(t);
+    return { ok: true };
+  }
+
   /** A phrase said to the table: passed on to everyone else there, seated or waiting, and not kept. */
   say(id: string, token: string, req: { text?: unknown }): { ok: true } | { error: Refusal } {
     const found = this.find(id, token);
@@ -317,6 +356,8 @@ export class Tables {
         this.close(t);
         continue;
       }
+      // A page gone quiet without closing its line (a lost network, a computer asleep) shows as gone.
+      if (t.people.some((p) => this.presence(p) !== p.told)) this.tellLobby(t);
       const g = t.game;
       if (!g || g.phase === OVER) continue;
       const seat = t.seats[g.turn]!;
@@ -326,7 +367,7 @@ export class Tables {
       // for good is played out, like a computer player whose host is away.
       let limit: number;
       if (seat.kind === 'bot') {
-        limit = t.people[0]!.sinks.size > 0 ? this.limits.botMs : this.limits.botAloneMs;
+        limit = this.presence(t.people[0]!) !== 'away' ? this.limits.botMs : this.limits.botAloneMs;
       } else if (t.people.some((p) => p.key === seat.key)) continue;
       else limit = this.limits.botAloneMs;
       if (waited >= limit) this.apply(t, heuristicAction(g, legalActions(g), this.rng));
@@ -363,8 +404,14 @@ export class Tables {
     }
   }
 
+  private presence(p: Person): Presence {
+    if (p.sinks.size === 0 || this.now() - p.seenAt > this.limits.aliveMs) return 'away';
+    return p.focused ? 'here' : 'unfocused';
+  }
+
   private tellLobby(t: Table): void {
     const playing = t.game !== null && t.game.phase !== OVER;
+    for (const p of t.people) p.told = this.presence(p);
     for (const p of t.people) {
       const lobby: Lobby = {
         type: 'lobby',
@@ -374,7 +421,7 @@ export class Tables {
           name: q.name,
           avatar: q.avatar !== null,
           host: q.host,
-          here: q.sinks.size > 0,
+          presence: q.told,
           seated: this.seatOf(t, q) >= 0,
         })),
         bots: t.bots,

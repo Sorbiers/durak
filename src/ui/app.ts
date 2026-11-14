@@ -21,7 +21,19 @@ import {
 import { observe } from '../engine/observe';
 import { cryptoRng } from '../engine/rng';
 import { Link, Me, ask, avatarUrl, failed, initialPicture, invitedTo, inviteUrl, listen, shrink } from '../net/client';
-import { Ending, Lobby, Moved, Seated, SeatInfo, ServerEvent, Snapshot as TableState, TableCard, Think } from '../net/protocol';
+import {
+  Ending,
+  Lobby,
+  Moved,
+  Presence,
+  Seated,
+  SeatInfo,
+  ServerEvent,
+  Snapshot as TableState,
+  TableCard,
+  TableRules,
+  Think,
+} from '../net/protocol';
 import { matches, prepare, revealed, shownFrom } from '../net/shown';
 import { TELLERS, tellerById, tellerPicture } from '../fortune/tellers';
 import { PAGES, otherLangs } from '../seo';
@@ -238,6 +250,7 @@ export function startApp(): void {
   let inbox: ServerEvent[] = []; // what the server has said and the table has yet to show
   let showing = false;
   let stopListening = (): void => {};
+  let online = false; // this page's line to the table is open
   let me = load<Me>('durak.me', { name: '', avatar: '' });
   const people = new Map<string, Character>(); // a person at the table, in the shape of a character
 
@@ -391,7 +404,7 @@ export function startApp(): void {
         const legal = legalActions(game, [], true);
         // With nothing to add the pass is automatic, except where it would send a beaten bout
         // to the discard pile: that is left to the player unless they asked otherwise.
-        const sweeps = game.phase === ATTACK && !settings.autoDiscard;
+        const sweeps = game.phase === ATTACK && !tableRules().autoDiscard;
         if (legal.length === 1 && legal[0] === PASS && !sweeps) {
           notice = t.nothingToAdd;
           render();
@@ -475,7 +488,7 @@ export function startApp(): void {
     // own "Done" already is that decision, and nobody is watching once they are out.
     const beaten = swept && next.discard.length > game.discard.length;
     const ownPass = seat === HUMAN && move.type === 'pass';
-    if (beaten && !settings.autoDiscard && !ownPass && !isOut(HUMAN)) {
+    if (beaten && !tableRules().autoDiscard && !ownPass && !isOut(HUMAN)) {
       await new Promise<void>((resolve) => {
         clearTable = resolve;
         render();
@@ -625,7 +638,15 @@ export function startApp(): void {
   // ------------------------------------------------------------- shared table
 
   /** Says something to the table server. False if it would not have it. */
-  async function tableSay(what: 'move' | 'resign' | 'again' | 'leave', more: object = {}): Promise<boolean> {
+  /** The settings of the game in force: at a table, the host's; `own` asks for this page's own,
+   *  as the host sends them to the table. */
+  function tableRules(own = false): TableRules {
+    if (!own && link && lobby) return lobby.rules;
+    const { transfer, firstBoutFive, nextLead, autoDiscard } = settings;
+    return { transfer, firstBoutFive, nextLead, autoDiscard };
+  }
+
+  async function tableSay(what: 'move' | 'resign' | 'again' | 'leave' | 'rules', more: object = {}): Promise<boolean> {
     if (!link) return false;
     return !failed(await ask<{ ok: true }>(`tables/${link.id}/${what}`, { token: link.token, ...more }));
   }
@@ -666,7 +687,12 @@ export function startApp(): void {
 
   function startListening(): void {
     stopListening();
-    if (link) stopListening = listen(link, hear, tableGone);
+    if (link) {
+      stopListening = listen(link, hear, tableGone, (up) => {
+        online = up;
+        showPresence();
+      });
+    }
   }
 
   /** Connects afresh, so that the server says how the game stands: after anything went amiss. */
@@ -680,6 +706,9 @@ export function startApp(): void {
       lobby = e;
       renderGuests();
       redrawInvite?.();
+      showPresence();
+      redrawAids?.();
+      renderBar(); // the heading names the host's variant
     } else if (e.type === 'closed') tableGone();
     else if (e.type === 'said') heard(e.key, e.name, e.text);
     else {
@@ -755,6 +784,30 @@ export function startApp(): void {
     box.focus();
   }
 
+  /** Whether a person's page is there, as the dot by their name shows it. This page's own is its
+   *  own line to the table: whoever reads it is looking at it. */
+  function presenceOf(key: string): Presence {
+    if (!online) return 'away';
+    if (key === lobby?.you) return 'here';
+    return lobby?.people.find((p) => p.key === key)?.presence ?? 'away';
+  }
+  const presenceText = (p: Presence): string =>
+    p === 'here' ? t.presenceHere : p === 'unfocused' ? t.presenceUnfocused : t.presenceAway;
+  const dot = (p: Presence): string => `<em class="dot ${p}" title="${presenceText(p)}"></em>`;
+
+  /** Puts each person's presence on their place at the table. */
+  function showPresence(): void {
+    for (let p = 0; p < seatEls.length; p++) {
+      const mark = seatEls[p].querySelector<HTMLElement>('.dot')!;
+      const person = link ? personAt(p) : null;
+      mark.hidden = !person;
+      if (!person) continue;
+      const now = presenceOf(person.key);
+      mark.className = `dot ${now}`;
+      mark.title = presenceText(now);
+    }
+  }
+
   /** The table is gone, or this page has left it: back to a game of its own. */
   function tableGone(): void {
     if (!link) return;
@@ -816,7 +869,7 @@ export function startApp(): void {
     }
     const legal = legalActions(game, [], true);
     // With nothing to add the pass is automatic, as in a game played here.
-    const sweeps = game.phase === ATTACK && !settings.autoDiscard;
+    const sweeps = game.phase === ATTACK && !tableRules().autoDiscard;
     if (legal.length === 1 && legal[0] === PASS && !sweeps) {
       notice = t.nothingToAdd;
       render();
@@ -899,7 +952,7 @@ export function startApp(): void {
       .map(
         (p) =>
           `<span class="guest" title="${esc(p.name)}: ${seats ? t.nextDeal : t.waitingGuest}">` +
-          `<img src="${personPicture(p)}" alt=""><b>${esc(p.name)}</b></span>`,
+          `<img src="${personPicture(p)}" alt=""><b>${dot(presenceOf(p.key))}${esc(p.name)}</b></span>`,
       );
     for (let i = 0; i < places; i++) {
       chips.push(`<span class="guest empty" title="${t.waitingGuest}"><i></i><b>${t.waitingGuest}</b></span>`);
@@ -1452,7 +1505,7 @@ export function startApp(): void {
       const el = document.createElement('div');
       el.className = p === HUMAN ? 'seat me' : 'seat';
       el.innerHTML =
-        `<span class="name"></span><span class="count"></span><span class="role"></span><span class="chance"></span>` +
+        `<em class="dot" hidden></em><span class="name"></span><span class="count"></span><span class="role"></span><span class="chance"></span>` +
         `<span class="dots"><i></i><i></i><i></i></span><span class="bubble"></span>`;
       seatsLayer.appendChild(el);
       seatEls.push(el);
@@ -1589,6 +1642,7 @@ export function startApp(): void {
   }
 
   function renderSeats(): void {
+    showPresence();
     const over = game.phase === OVER;
     if (jokeSeat >= 0 && !jokeAllowed(jokeSeat)) stopJoke();
     for (let p = 0; p < seatEls.length; p++) {
@@ -1821,7 +1875,7 @@ export function startApp(): void {
   function renderBar(): void {
     document.documentElement.lang = settings.lang;
     document.title = PAGES[settings.lang].title;
-    $('brand').innerHTML = heading(t, settings.transfer, (mode) => `<span class="mode">${mode}</span>`);
+    $('brand').innerHTML = heading(t, seats ? game.rules.transfer : tableRules().transfer, (mode) => `<span class="mode">${mode}</span>`);
     $('meta').innerHTML =
       `<span class="trump-chip ${isRed(game.trump) ? 'red' : 'black'}">${t.trump} ${suitSvg(game.trump)}</span>`;
     const games = tallies[tallyKey()]?.games ?? 0;
@@ -1892,15 +1946,19 @@ export function startApp(): void {
     const row = (label: string, control: string, cls = ''): string =>
       `<div class="row${cls}"><span>${label}</span>${control}</div>`;
 
+    // A guest at a table sees the host's settings of the game, and cannot change them.
+    const game0 = tableRules();
     settingsDialog.innerHTML =
       `<form method="dialog"><h2>${t.setTitle}</h2>` +
       // Two columns where there is room: the game and the opponents, then the table and the aids.
       `<div class="cols"><div class="col">` +
-      `<fieldset class="group"><legend>${t.secGame}</legend>` +
-      row(t.setGame, seg('transfer', [['0', t.simple], ['1', t.transfer]], settings.transfer ? '1' : '0')) +
-      row(t.setNextLead, seg('nextLead', [['winner', t.leadWinner], ['fool', t.leadFool]], settings.nextLead)) +
+      `<fieldset class="group game"><legend>${t.secGame}</legend>` +
+      `<p class="fine not-here" hidden>${t.hostRules}</p>` +
+      row(t.setGame, seg('transfer', [['0', t.simple], ['1', t.transfer]], game0.transfer ? '1' : '0')) +
+      row(t.setNextLead, seg('nextLead', [['winner', t.leadWinner], ['fool', t.leadFool]], game0.nextLead)) +
       row(t.setThink, seg('thinkMs', [['600', t.fast], ['1500', t.normal], ['4000', t.deep]], String(settings.thinkMs))) +
-      check('firstBoutFive', t.setFive, settings.firstBoutFive) +
+      check('firstBoutFive', t.setFive, game0.firstBoutFive) +
+      check('autoDiscard', t.setAutoDiscard, game0.autoDiscard) +
       `</fieldset>` +
       `<fieldset class="group"><legend>${t.setOpponents}</legend>` +
       seg(
@@ -1916,7 +1974,6 @@ export function startApp(): void {
       row(t.portraitKind, seg('avatars', [['static', t.avStatic], ['context', t.avContext]], settings.avatars), ' sub') +
       check('phrases', t.setPhrases, settings.phrases) +
       check('speech', t.setSpeech, settings.speech) +
-      check('autoDiscard', t.setAutoDiscard, settings.autoDiscard) +
       check('showPlayable', t.setPlayable, settings.showPlayable) +
       check('showArrow', t.setArrow, settings.showArrow) +
       check('trumpCount', t.setTrumpCount, settings.trumpCount) +
@@ -1992,6 +2049,7 @@ export function startApp(): void {
             transfer: data.get('transfer') === '1',
             firstBoutFive: data.has('firstBoutFive'),
             nextLead: data.get('nextLead') === 'fool' ? ('fool' as const) : ('winner' as const),
+            autoDiscard: data.has('autoDiscard'),
           };
           const request = { name, avatar: me.avatar || undefined, bots: keepBots ? picked : [], maxGuests, waitAll, rules };
           void ask<Seated>('tables', request).then((made) => {
@@ -2012,8 +2070,8 @@ export function startApp(): void {
       const list = (lobby?.people ?? [])
         .map(
           (p) =>
-            `<li><img src="${personPicture(p)}" alt=""><b>${esc(p.name)}</b>` +
-            `<i>${!p.here ? t.away : !p.seated && lobby?.playing ? t.nextDeal : ''}</i></li>`,
+            `<li><img src="${personPicture(p)}" alt="">${dot(presenceOf(p.key))}<b>${esc(p.name)}</b>` +
+            `<i>${!p.seated && lobby?.playing ? t.nextDeal : ''}</i></li>`,
         )
         .join('');
       const places = lobby ? Math.max(0, lobby.maxGuests - (lobby.people.length - 1)) : 0;
@@ -2057,6 +2115,21 @@ export function startApp(): void {
       group.disabled = !settings.training || link !== null;
       group.querySelector<HTMLInputElement>('[name=training]')!.disabled = link !== null;
       group.querySelector<HTMLElement>('.not-here')!.hidden = link === null;
+      const rules = form.querySelector<HTMLFieldSetElement>('fieldset.game')!;
+      const guest = link !== null && !link.host;
+      rules.disabled = guest;
+      rules.querySelector<HTMLElement>('.not-here')!.hidden = !guest;
+      if (guest) {
+        const r = tableRules();
+        const pick = (name: string, value: string): void => {
+          const radio = rules.querySelector<HTMLInputElement>(`[name=${name}][value="${value}"]`);
+          if (radio) radio.checked = true;
+        };
+        pick('transfer', r.transfer ? '1' : '0');
+        pick('nextLead', r.nextLead);
+        rules.querySelector<HTMLInputElement>('[name=firstBoutFive]')!.checked = r.firstBoutFive;
+        rules.querySelector<HTMLInputElement>('[name=autoDiscard]')!.checked = r.autoDiscard;
+      }
     };
     redrawAids();
     settingsDialog.addEventListener('close', () => (redrawInvite = redrawAids = null), { once: true });
@@ -2101,6 +2174,7 @@ export function startApp(): void {
     // These only change what is shown or heard, so they take effect at once, mid-game included.
     const apply = (change: Partial<Settings>): void => {
       settings = { ...settings, ...change };
+      if ('autoDiscard' in change && link?.host) void tableSay('rules', { rules: tableRules(true) });
       if (!aid('hints')) showHint = false;
       // What the advice knows, or whether it is wanted, may have changed with this.
       if ('openCards' in change || 'training' in change) dropAdvice();
@@ -2150,16 +2224,24 @@ export function startApp(): void {
         lastWinner = undefined;
         lastFool = undefined;
       }
+      // A guest's game group is the host's, locked: their own settings of it are left as they were.
+      const guest = link !== null && !link.host;
       settings = {
         ...settings,
         opponents: picked,
-        nextLead: data.get('nextLead') === 'fool' ? 'fool' : 'winner',
-        transfer: data.get('transfer') === '1',
-        thinkMs: Number(data.get('thinkMs')),
-        firstBoutFive: data.has('firstBoutFive'),
+        ...(guest
+          ? {}
+          : {
+              nextLead: data.get('nextLead') === 'fool' ? ('fool' as const) : ('winner' as const),
+              transfer: data.get('transfer') === '1',
+              thinkMs: Number(data.get('thinkMs')),
+              firstBoutFive: data.has('firstBoutFive'),
+            }),
       };
       save('durak.settings', settings);
-      deal();
+      // The host's settings of the game go to the table first, so that the new deal is played by them.
+      if (link?.host) void tableSay('rules', { rules: tableRules(true) }).then(deal);
+      else deal();
     });
     settingsDialog.showModal();
   }

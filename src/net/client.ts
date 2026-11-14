@@ -51,14 +51,30 @@ export const invitedTo = (): string | null => /^#t=([A-Za-z0-9]{6,20})$/.exec(lo
  * Listens to a table. The browser reconnects by itself when the line drops; when the server
  * refuses outright, the table is asked after, and `gone` is called if it is no longer there.
  */
-export function listen(link: Seated, onEvent: (e: ServerEvent) => void, gone: () => void): () => void {
+export function listen(
+  link: Seated,
+  onEvent: (e: ServerEvent) => void,
+  gone: () => void,
+  onLine: (up: boolean) => void = () => {},
+): () => void {
   let source: EventSource | null = null;
   let retry = 0;
   let stopped = false;
+  let heard = Date.now();
   const open = (): void => {
+    heard = Date.now();
     source = new EventSource(url(`tables/${link.id}/events?token=${link.token}`));
-    source.onmessage = (m) => onEvent(JSON.parse(m.data as string) as ServerEvent);
+    source.onopen = () => {
+      heard = Date.now();
+      onLine(true);
+    };
+    source.onmessage = (m) => {
+      heard = Date.now();
+      const e = JSON.parse(m.data as string) as ServerEvent;
+      if (e.type !== 'beat') onEvent(e);
+    };
     source.onerror = () => {
+      if (!stopped) onLine(false);
       if (stopped || source?.readyState !== EventSource.CLOSED) return;
       // Closed for good: the table is gone, or the service is. Find out which.
       void ask<unknown>(`tables/${link.id}`).then((card) => {
@@ -69,12 +85,42 @@ export function listen(link: Seated, onEvent: (e: ServerEvent) => void, gone: ()
     };
   };
   open();
+
+  // The keepalive: the server is told every few seconds that this page is still here, and whether
+  // it is the one being looked at; at once when that changes. The server beats on the stream, so a
+  // stream that has gone quiet has been lost without a word, and is opened again.
+  const focused = (): boolean => document.visibilityState === 'visible' && document.hasFocus();
+  let told: boolean | null = null;
+  const ping = (): void => {
+    told = focused();
+    void ask(`tables/${link.id}/ping`, { token: link.token, focused: told });
+  };
+  const changed = (): void => {
+    if (focused() !== told) ping();
+  };
+  const keepalive = window.setInterval(() => {
+    if (source && source.readyState !== EventSource.CLOSED && Date.now() - heard > STREAM_QUIET) {
+      source.close();
+      onLine(false);
+      open();
+    }
+    ping();
+  }, PING_EVERY);
+  const events = ['visibilitychange', 'focus', 'blur'] as const;
+  for (const name of events) (name === 'visibilitychange' ? document : window).addEventListener(name, changed);
+  ping();
+
   return () => {
     stopped = true;
     clearTimeout(retry);
+    clearInterval(keepalive);
+    for (const name of events) (name === 'visibilitychange' ? document : window).removeEventListener(name, changed);
     source?.close();
   };
 }
+
+const PING_EVERY = 10_000; // the server takes a page to be gone after 25 s without one
+const STREAM_QUIET = 40_000; // the server beats every 15 s
 
 const AVATAR_SIZE = 256;
 const AVATAR_LIMIT = 70_000; // of the data: address; the server takes a little more
