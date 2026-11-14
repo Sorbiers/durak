@@ -8,6 +8,19 @@ export const SITE = 'https://podkidnoy.online/';
 export const GAME = SITE;
 export const REPO = 'https://github.com/Sorbiers/durak';
 
+/** Where a thank-you goes. A plain link: nothing is loaded from there, so the privacy note holds. */
+export const DONATE = 'https://ko-fi.com/sorbiers';
+
+const donateLink = (text: string): string =>
+  `<a href="${DONATE}" target="_blank" rel="noopener">${text}</a>`;
+
+/** The closing line of every About text. */
+export const DONATE_LINE: Record<'ru' | 'en' | 'fr', string> = {
+  ru: `<p class="fine">Сайт бесплатный и без рекламы. Если он вам нравится, автора можно отблагодарить: ${donateLink('поддержать проект')}.</p>`,
+  en: `<p class="fine">The site is free and carries no ads. If you enjoy it, you can thank the author: ${donateLink('donate')}.</p>`,
+  fr: `<p class="fine">Le site est gratuit et sans publicité. Si vous l’aimez, vous pouvez remercier l’auteur : ${donateLink('faire un don')}.</p>`,
+};
+
 export type PageLang = 'ru' | 'en' | 'fr';
 
 /** The site's languages, in the order the language switch goes round them. */
@@ -84,7 +97,9 @@ export const PAGES: Record<PageLang, PageText> = {
 <a href="${REPO}/issues" target="_blank" rel="noopener">github.com/Sorbiers/durak/issues</a>.</p>
 
 <p class="fine">Исходный код открыт, лицензия MIT:
-<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
+<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>
+
+${DONATE_LINE.ru}`,
   },
   en: {
     title: 'Podkidnoy Durak online — play the Russian card game against a strong computer',
@@ -145,7 +160,9 @@ the others at the table and kept on the server only while the table exists. Repo
 <a href="${REPO}/issues" target="_blank" rel="noopener">github.com/Sorbiers/durak/issues</a>.</p>
 
 <p class="fine">The source is open under the MIT licence:
-<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
+<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>
+
+${DONATE_LINE.en}`,
   },
   fr: {
     title: 'Dourak (podkidnoï) en ligne — le jeu de cartes russe contre un ordinateur fort',
@@ -207,6 +224,8 @@ des invités, le nom et l’image que vous indiquez sont montrés aux autres jou
 conservés sur le serveur tant que la table existe. Signalez les problèmes ici : <a href="${REPO}/issues" target="_blank" rel="noopener">github.com/Sorbiers/durak/issues</a>.</p>
 
 <p class="fine">Le code source est ouvert, sous licence MIT :
-<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
+<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>
+
+${DONATE_LINE.fr}`,
   },
 };

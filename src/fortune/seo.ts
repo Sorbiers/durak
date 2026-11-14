@@ -1,4 +1,4 @@
-import { PageLang, PageText, REPO } from '../seo';
+import { DONATE_LINE, PageLang, PageText, REPO } from '../seo';
 
 // What the fortune-telling page says about itself, for search engines and in its "About" text.
 // Like the game's texts in src/seo.ts, it is written into the pages when the site is built.
@@ -46,7 +46,9 @@ IP-адресом и браузером и считает, сколько рас
 <a href="${REPO}/issues" target="_blank" rel="noopener">github.com/Sorbiers/durak/issues</a>.</p>
 
 <p class="fine">Исходный код открыт, лицензия MIT:
-<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
+<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>
+
+${DONATE_LINE.ru}`,
   },
   en: {
     title: 'Fortune-telling with playing cards online — 36 cards and Lenormand, free',
@@ -92,7 +94,9 @@ browser, and counts how many readings are made. Report problems here:
 <a href="${REPO}/issues" target="_blank" rel="noopener">github.com/Sorbiers/durak/issues</a>.</p>
 
 <p class="fine">The source is open under the MIT licence:
-<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
+<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>
+
+${DONATE_LINE.en}`,
   },
   fr: {
     title: 'Cartomancie en ligne avec un jeu de 36 cartes et le Lenormand, gratuite',
@@ -139,6 +143,8 @@ avec l’adresse IP et le navigateur, et compte le nombre de tirages. Signalez l
 <a href="${REPO}/issues" target="_blank" rel="noopener">github.com/Sorbiers/durak/issues</a>.</p>
 
 <p class="fine">Le code source est ouvert, sous licence MIT :
-<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>`,
+<a href="${REPO}" target="_blank" rel="noopener">github.com/Sorbiers/durak</a></p>
+
+${DONATE_LINE.fr}`,
   },
 };
