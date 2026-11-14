@@ -40,10 +40,13 @@ export interface PageText {
 
 export const PAGES: Record<PageLang, PageText> = {
   ru: {
-    title: 'Подкидной дурак онлайн — играть бесплатно против сильного компьютера',
+    title: 'Подкидной дурак онлайн — играть бесплатно с друзьями по сети или с компьютером',
     description:
-      'Подкидной дурак онлайн бесплатно и без регистрации: подкидной и переводной, 2–4 игрока, ' +
-      '36 карт. Сильный честный компьютер: он не видит ваши карты и не знает порядок колоды.',
+      'Подкидной дурак онлайн бесплатно и без регистрации: карточная игра в подкидного или ' +
+      'переводного дурака с друзьями по сети или со сказочными соперниками с искусственным ' +
+      'интеллектом. Честная игра: компьютер не подглядывает ' +
+      'в ваши карты. Режим тренировки и обучения. А в перерыве опытная гадалка расскажет, что было ' +
+      'и что будет.',
     about: `
 <h2>Подкидной дурак онлайн</h2>
 <p>«Дурак» — самая известная русская карточная игра. В ней нет победителя: проигрывает тот, кто
@@ -102,11 +105,13 @@ export const PAGES: Record<PageLang, PageText> = {
 ${DONATE_LINE.ru}`,
   },
   en: {
-    title: 'Podkidnoy Durak online — play the Russian card game against a strong computer',
+    title: 'Podkidnoy Durak online — play the Russian card game free with friends or the computer',
     description:
-      'Play Podkidnoy Durak online, the classic Russian card game, free in your browser. 2–4 ' +
-      'players, 36 cards, throw-in (podkidnoy) and passing (perevodnoy) variants. A strong, fair ' +
-      'computer that never sees your hand or the deck.',
+      'Play Podkidnoy Durak online, free and with no sign-up: the Russian card game, throw-in or ' +
+      'passing, with friends over the internet or against fabled opponents with artificial ' +
+      'intelligence. Fair play: the computer ' +
+      'never peeks at your cards. Training and learning mode. And between games, a seasoned ' +
+      'fortune-teller will tell you what was and what is to come.',
     about: `
 <h2>Podkidnoy Durak online</h2>
 <p>Durak (“the fool”) is the best-known Russian card game. Nobody wins it: the one player left
@@ -165,10 +170,13 @@ the others at the table and kept on the server only while the table exists. Repo
 ${DONATE_LINE.en}`,
   },
   fr: {
-    title: 'Dourak (podkidnoï) en ligne — le jeu de cartes russe contre un ordinateur fort',
+    title: 'Dourak (podkidnoï) en ligne — jouez gratuitement avec vos amis ou contre l’ordinateur',
     description:
-      'Jouez au dourak, le classique russe, gratuitement dans le navigateur : 2 à 4 joueurs, 36 cartes. ' +
-      'Un ordinateur fort et loyal, qui ne voit ni votre main ni le talon.',
+      'Jouez au dourak en ligne, gratuitement et sans inscription : le jeu de cartes russe, en ' +
+      'podkidnoï ou en perevodnoï, avec vos amis en réseau ou contre des personnages de conte dotés ' +
+      'd’une intelligence artificielle. Un jeu loyal : ' +
+      'l’ordinateur ne regarde jamais vos cartes. Mode entraînement et apprentissage. Et entre deux ' +
+      'parties, une voyante expérimentée vous dira ce qui fut et ce qui sera.',
     about: `
 <h2>Dourak en ligne</h2>
 <p>Le dourak (« le sot ») est le jeu de cartes russe le plus connu. Personne n’y gagne : le
