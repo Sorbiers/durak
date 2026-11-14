@@ -54,7 +54,7 @@ export const PAGES: Record<PageLang, PageText> = {
 отбивающийся должен побить каждую карту старшей картой той же масти или козырем, а если не может
 или не хочет — забирает всё со стола.</p>
 <p>Здесь можно играть в подкидного дурака онлайн бесплатно, прямо в браузере, без регистрации и
-рекламы: один на один с компьютером или за столом на троих и четверых.</p>
+рекламы: с друзьями по сети или с компьютером, один на один или за столом на троих и четверых.</p>
 
 <h3>Честный и сильный соперник</h3>
 <p>Играть в дурака с компьютером интересно, только когда он играет честно. Здесь компьютер не
@@ -66,6 +66,9 @@ export const PAGES: Record<PageLang, PageText> = {
 <h3>Что есть в игре</h3>
 <ul>
 <li>Подкидной и переводной дурак, колода 36 карт, от двух до четырёх игроков.</li>
+<li>Игра с друзьями по сети: кнопка «Пригласить» даёт ссылку на ваш стол, до трёх гостей.
+Регистрация не нужна — только имя и, если хотите, картинка. Свободные места можно отдать
+компьютерным соперникам, а кнопкой «Сказать» — перекинуться словом через стол.</li>
 <li>Двадцать семь соперников с характером и пять уровней силы, от новичка до мастера; уровень каждого
 можно задать отдельно.</li>
 <li>Портреты, реплики и озвучка — по желанию.</li>
@@ -118,8 +121,8 @@ ${DONATE_LINE.ru}`,
 holding cards at the end loses and is the fool. Players take turns to attack the player on
 their left; the defender must beat every card with a higher card of the same suit or with a
 trump, and a defender who cannot or will not picks up everything on the table.</p>
-<p>Here you can play it free in the browser, with no sign-up and no ads: one on one, or at a
-table of three or four against computer opponents.</p>
+<p>Here you can play it free in the browser, with no sign-up and no ads: with friends over the
+internet or against the computer, one on one or at a table of three or four.</p>
 
 <h3>A fair and strong opponent</h3>
 <p>The computer does not peek: it never knows the order of the deck or anyone else's cards. The
@@ -130,6 +133,9 @@ calculated exactly.</p>
 <h3>What is in the game</h3>
 <ul>
 <li>Podkidnoy (throw-in) and perevodnoy (passing) Durak, a 36-card deck, two to four players.</li>
+<li>Play with friends over the internet: the Invite button gives you a link to your table, for up
+to three guests. No sign-up, just a name and, if you like, a picture. Empty seats can go to
+computer opponents, and the Say button lets you have a word across the table.</li>
 <li>Twenty-seven opponents with characters of their own and five levels of strength, from beginner to
 master; each one's level can be set separately.</li>
 <li>Portraits, table talk and Russian voice lines, all optional.</li>
@@ -184,8 +190,8 @@ dernier joueur à qui il reste des cartes a perdu, c’est lui le dourak. Chacun
 son voisin de gauche ; le défenseur doit battre chaque carte avec une carte plus forte de la même
 couleur ou avec un atout, et s’il ne peut pas ou ne veut pas, il ramasse tout ce qui est sur la
 table.</p>
-<p>Ici, on y joue gratuitement dans le navigateur, sans inscription ni publicité : en tête-à-tête,
-ou à trois ou quatre contre des adversaires artificiels.</p>
+<p>Ici, on y joue gratuitement dans le navigateur, sans inscription ni publicité : avec ses amis
+en réseau ou contre l’ordinateur, en tête-à-tête ou à trois ou quatre.</p>
 
 <h3>Un adversaire fort et loyal</h3>
 <p>L’ordinateur ne triche pas : il ne connaît jamais l’ordre du talon ni les cartes des autres.
@@ -197,6 +203,10 @@ souviennent de qui a ramassé quoi et calculent plusieurs coups à l’avance. Q
 <ul>
 <li>Dourak podkidnoï (où l’on ajoute des cartes) et perevodnoï (où l’on transfère l’attaque), jeu
 de 36 cartes, de deux à quatre joueurs.</li>
+<li>Jouer avec ses amis en réseau : le bouton « Inviter » donne un lien vers votre table, pour
+trois invités au plus. Pas d’inscription, juste un nom et, si vous voulez, une image. Les places
+libres peuvent revenir à des adversaires de l’ordinateur, et le bouton « Dire » permet d’échanger
+un mot autour de la table.</li>
 <li>Vingt-sept adversaires qui ont chacun leur caractère et cinq niveaux de force, du débutant au
 maître ; le niveau de chacun se règle séparément.</li>
 <li>Portraits, remarques à table et voix (en russe) : tout est facultatif.</li>
